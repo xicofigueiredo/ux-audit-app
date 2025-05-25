@@ -1,0 +1,150 @@
+<h2>UX Video Audits</h2>
+
+<div class="upload-section">
+  <%= form_with(model: VideoAudit.new, local: true, multipart: true) do |f| %>
+    <div class="field">
+      <%= f.file_field :video, accept: 'video/*', class: 'file-input' %>
+    </div>
+    <%= f.submit "Analyze Video", class: 'upload-button' %>
+  <% end %>
+</div>
+
+<div id="analysis-results"></div>
+
+<script>
+function checkAnalysisStatus(videoAuditId) {
+  fetch(`/video_audits/${videoAuditId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'completed') {
+        document.getElementById('analysis-results').innerHTML = data.result;
+      } else if (data.status === 'pending') {
+        setTimeout(() => checkAnalysisStatus(videoAuditId), 5000);
+      }
+    });
+}
+
+document.querySelector('form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+
+  fetch(this.action, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.id) {
+      checkAnalysisStatus(data.id);
+    }
+  });
+});
+</script>
+
+<% if @audits.any? %>
+  <div class="past-audits">
+    <h3>Previous Audits</h3>
+    <% @audits.each do |audit| %>
+      <%= link_to video_audit_path(audit), class: "audit-item #{audit.status}" do %>
+        <div class="audit-info">
+          <span class="timestamp"><%= audit.created_at.strftime("%b %d %H:%M") %></span>
+          <span class="status <%= audit.status %>"><%= audit.status %></span>
+        </div>
+        <% if audit.failed? %>
+          <div class="error-message">
+            <%= audit.llm_response %>
+          </div>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
+
+<style>
+  .upload-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 2px dashed #e5e7eb;
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .file-input {
+    margin-bottom: 1rem;
+  }
+
+  .upload-button {
+    padding: 12px 24px;
+    background: #3B82F6;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .upload-button:hover {
+    background: #2563EB;
+  }
+
+  .past-audits {
+    margin-top: 2rem;
+  }
+
+  .audit-item {
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    margin: 8px 0;
+    border-radius: 8px;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+  }
+
+  .audit-item:hover {
+    border-color: #3B82F6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .audit-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .status.completed {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .status.failed {
+    background: #FEE2E2;
+    color: #991B1B;
+  }
+
+  .status.pending {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .error-message {
+    margin-top: 8px;
+    font-size: 0.875rem;
+    color: #991B1B;
+  }
+
+  .timestamp {
+    color: #6B7280;
+  }
+</style>

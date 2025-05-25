@@ -1,0 +1,109 @@
+<%# app/views/video_audits/show.html.erb %>
+<div class="audit-result" data-audit-id="<%= @audit.id %>">
+  <h3>Analysis Status: <span class="status <%= @audit.status %>"><%= @audit.status %></span></h3>
+
+  <% if @audit.completed? %>
+    <div class="results-box">
+      <%= @audit.llm_response %>
+    </div>
+  <% elsif @audit.failed? %>
+    <div class="error-box">
+      <%= @audit.llm_response %>
+    </div>
+  <% else %>
+    <div class="processing">
+      <div class="spinner"></div>
+      <p>Processing video analysis...</p>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  .audit-result {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .status.pending {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .status.completed {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .status.failed {
+    background: #FEE2E2;
+    color: #991B1B;
+  }
+
+  .results-box, .error-box {
+    margin-top: 20px;
+    padding: 16px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+  }
+
+  .results-box {
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+  }
+
+  .error-box {
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+  }
+
+  .processing {
+    text-align: center;
+    margin-top: 40px;
+  }
+
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3B82F6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+
+<script>
+function checkStatus() {
+  const auditId = document.querySelector('.audit-result').dataset.auditId;
+
+  fetch(`/video_audits/${auditId}`, {
+    headers: {
+      'Accept': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'pending') {
+      setTimeout(checkStatus, 2000); // Check again in 2 seconds
+    } else {
+      window.location.reload(); // Reload page when status changes
+    }
+  });
+}
+
+if (document.querySelector('.status.pending')) {
+  checkStatus();
+}
+</script>
