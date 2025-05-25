@@ -83,6 +83,9 @@ class LlmAnalysisJob < ApplicationJob
         llm_response: analysis
       )
 
+      # Schedule cleanup
+      CleanupJob.perform_later(audit.id)
+
     rescue => e
       Rails.logger.error("LLM Analysis Error: #{e.message}")
       Rails.logger.error(e.backtrace.join("\n"))
@@ -91,6 +94,9 @@ class LlmAnalysisJob < ApplicationJob
         status: 'failed',
         llm_response: "Error analyzing frames: #{e.message}"
       )
+
+      # Schedule cleanup even if analysis fails
+      CleanupJob.perform_later(audit.id)
     end
   end
 end
