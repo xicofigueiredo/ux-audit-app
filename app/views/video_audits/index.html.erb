@@ -37,8 +37,8 @@ document.querySelector('form').addEventListener('submit', function(e) {
   })
   .then(response => response.json())
   .then(data => {
-    if (data.id) {
-      checkAnalysisStatus(data.id);
+    if (data.redirect_url) {
+      window.location.href = data.redirect_url;
     }
   });
 });

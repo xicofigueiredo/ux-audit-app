@@ -9,7 +9,7 @@ class VideoAuditsController < ApplicationController
 
     if @audit.save
       VideoProcessingJob.perform_later(@audit.id)
-      redirect_to video_audit_path(@audit)
+      render json: { id: @audit.id, redirect_url: video_audit_path(@audit) }
     else
       render json: { errors: @audit.errors }, status: :unprocessable_entity
     end
