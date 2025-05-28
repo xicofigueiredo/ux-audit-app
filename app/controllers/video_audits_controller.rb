@@ -9,9 +9,15 @@ class VideoAuditsController < ApplicationController
 
     if @audit.save
       VideoProcessingJob.perform_later(@audit.id)
-      render json: { id: @audit.id, redirect_url: video_audit_path(@audit) }
+      respond_to do |format|
+        format.html { redirect_to video_audit_path(@audit) }
+        format.json { render json: { id: @audit.id, redirect_url: video_audit_path(@audit) } }
+      end
     else
-      render json: { errors: @audit.errors }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html { render :index }
+        format.json { render json: { errors: @audit.errors }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -22,6 +28,12 @@ class VideoAuditsController < ApplicationController
       format.html
       format.json { render json: { status: @audit.status, result: @audit.llm_response } }
     end
+  end
+
+  def destroy
+    @audit = VideoAudit.find(params[:id])
+    @audit.destroy
+    redirect_to video_audits_path
   end
 
   private

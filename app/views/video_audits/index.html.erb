@@ -48,17 +48,23 @@ document.querySelector('form').addEventListener('submit', function(e) {
   <div class="past-audits">
     <h3>Previous Audits</h3>
     <% @audits.each do |audit| %>
-      <%= link_to video_audit_path(audit), class: "audit-item #{audit.status}" do %>
+      <div class="audit-item <%= audit.status %>">
         <div class="audit-info">
-          <span class="timestamp"><%= audit.created_at.strftime("%b %d %H:%M") %></span>
-          <span class="status <%= audit.status %>"><%= audit.status %></span>
+          <span class="video-title"><%= audit.video.identifier %></span>
+          <div class="audit-meta">
+            <span class="timestamp"><%= audit.created_at.strftime("%b %d %H:%M") %></span>
+            <span class="status <%= audit.status %>"><%= audit.status %></span>
+            <%= button_to video_audit_path(audit), method: :delete, class: "delete-button", form: { class: "delete-form" }, data: { confirm: "Are you sure you want to delete?" } do %>
+              Delete
+            <% end %>
+          </div>
         </div>
         <% if audit.failed? %>
           <div class="error-message">
             <%= audit.llm_response %>
           </div>
         <% end %>
-      <% end %>
+      </div>
     <% end %>
   </div>
 <% end %>
@@ -146,5 +152,34 @@ document.querySelector('form').addEventListener('submit', function(e) {
 
   .timestamp {
     color: #6B7280;
+  }
+
+  .audit-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .delete-button {
+    padding: 6px 10px;
+    background: #EF4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 1rem;
+    margin-left: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .delete-button:hover {
+    background: #DC2626;
+  }
+
+  .delete-form {
+    margin: 0;
+    display: inline;
   }
 </style>
