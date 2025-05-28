@@ -1,29 +1,46 @@
 <h2>UX Video Audits</h2>
 
-<div class="upload-section">
+<div class="upload-section" id="drop-zone">
   <%= form_with(model: VideoAudit.new, local: true, multipart: true) do |f| %>
     <div class="field">
-      <%= f.file_field :video, accept: 'video/*', class: 'file-input' %>
+      <div class="drop-zone-content">
+        <%= f.file_field :video, accept: 'video/*', class: 'file-input' %>
+      </div>
     </div>
+  </div>
+  <div class="button-center">
     <%= f.submit "Analyze Video", class: 'upload-button' %>
+  </div>
   <% end %>
-</div>
 
 <div id="analysis-results"></div>
 
 <script>
-function checkAnalysisStatus(videoAuditId) {
-  fetch(`/video_audits/${videoAuditId}`)
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'completed') {
-        document.getElementById('analysis-results').innerHTML = data.result;
-      } else if (data.status === 'pending') {
-        setTimeout(() => checkAnalysisStatus(videoAuditId), 5000);
-      }
-    });
-}
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.querySelector('.file-input');
 
+// Handle drag and drop
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    fileInput.files = files;
+    fileInput.closest('form').requestSubmit();
+  }
+});
+
+// Handle form submission
 document.querySelector('form').addEventListener('submit', function(e) {
   e.preventDefault();
   const formData = new FormData(this);
@@ -76,6 +93,19 @@ document.querySelector('form').addEventListener('submit', function(e) {
     border: 2px dashed #e5e7eb;
     border-radius: 8px;
     text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .upload-section.drag-over {
+    border-color: #3B82F6;
+    background-color: #EFF6FF;
+  }
+
+  .drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
   }
 
   .file-input {
@@ -181,5 +211,10 @@ document.querySelector('form').addEventListener('submit', function(e) {
   .delete-form {
     margin: 0;
     display: inline;
+  }
+
+  .button-center {
+    text-align: center;
+    margin-top: 1rem;
   }
 </style>
