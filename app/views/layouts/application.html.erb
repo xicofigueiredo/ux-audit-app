@@ -7,9 +7,46 @@
     <%= csp_meta_tag %>
 
     <%= stylesheet_link_tag "application" %>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
-  <body>
-    <%= yield %>
+  <body class="bg-[#f6f4ff]">
+    <header class="bg-white shadow-sm">
+      <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <div class="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center text-white font-bold text-lg">UX</div>
+          <span class="text-2xl font-extrabold text-gray-800 tracking-tight">UXPilot</span>
+        </div>
+        <nav class="flex-1 flex justify-center">
+          <ul class="flex space-x-8 font-medium text-gray-700">
+            <li><a href="#how-it-works" class="hover:text-purple-600">How It Works</a></li>
+            <li><a href="#benefits" class="hover:text-purple-600">Benefits</a></li>
+            <li><a href="#faq" class="hover:text-purple-600">FAQ</a></li>
+          </ul>
+        </nav>
+        <a href="#early-access" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition">Get Early Access</a>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+      <%= yield %>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-6">
+      <div class="container mx-auto px-4">
+        <div class="flex justify-between">
+          <div>
+            <h3 class="text-lg font-semibold">UxAuditApp</h3>
+            <p class="text-sm">© 2023 UxAuditApp. All rights reserved.</p>
+          </div>
+          <div>
+            <ul class="flex space-x-4">
+              <li><a href="#" class="text-gray-300 hover:text-white">Privacy Policy</a></li>
+              <li><a href="#" class="text-gray-300 hover:text-white">Terms of Service</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </footer>
   </body>
 </html>

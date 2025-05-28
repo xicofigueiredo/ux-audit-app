@@ -1,0 +1,111 @@
+<div class="flex h-screen bg-gray-100">
+  <!-- Sidebar -->
+  <div class="w-64 bg-white shadow-sm flex flex-col py-6">
+    <div class="flex items-center px-6 mb-8">
+      <div class="w-9 h-9 rounded-lg bg-purple-500 flex items-center justify-center text-white font-bold text-base mr-3">UX</div>
+      <span class="text-xl font-extrabold text-gray-800 tracking-tight">UXPilot</span>
+    </div>
+    <nav class="flex-1 px-4 space-y-2">
+      <%= link_to projects_path, class: "flex items-center px-4 py-3 text-purple-600 bg-purple-100 rounded-lg font-semibold", aria: { current: 'page' } do %>
+        <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V4zM14 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V4zM4 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+        Projects
+      <% end %>
+      <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0A5.002 5.002 0 0112 16a5.002 5.002 0 014.644 2.143m6.356-2.143A7.002 7.002 0 0012 14a7.002 7 0 00-6.356 2.143M12 16l2.354-2.354M12 16l-2.354-2.354"></path></svg>
+        Team
+      </a>
+      <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+        Billing
+      </a>
+      <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9.247a4.75 4.75 0 015.273-4.447M11 11.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM11 11.5v-1.5M11 11.5h-1.5M12 11.5l-1.5 1.5m1.5-1.5V16m-1.5-1.5l1.5 1.5m-1.5-1.5h1.5"></path></svg>
+        Help
+      </a>
+    </nav>
+    <div class="px-4 py-6 border-t border-gray-200">
+      <%= link_to "#", class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.319.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.319-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.319-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.319 2.37-2.37.26-.158.5-.34.72-.56z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        Settings
+      <% end %>
+    </div>
+  </div>
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Top Bar -->
+    <header class="flex justify-between items-center px-6 py-4 bg-white border-b shadow-sm">
+      <div class="flex items-center space-x-4">
+        <div class="relative">
+          <button class="flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-600">
+            Personal Workspace
+            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <!-- Dropdown would go here -->
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="relative">
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.465 6.022 6 8.034 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+          <span class="absolute top-0 right-0 block h-2 w-2 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-purple-600"></span>
+        </div>
+        <div class="relative">
+          <button class="flex items-center focus:outline-none rounded-full">
+            <span class="sr-only">User menu</span>
+             <img class="h-8 w-8 rounded-full" src="https://via.placeholder.com/150" alt="User Avatar">
+            <svg class="w-4 h-4 ml-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <!-- Dropdown would go here -->
+        </div>
+      </div>
+    </header>
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto p-8">
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Projects</h1>
+          <p class="text-gray-600">Manage your UX audits and reports</p>
+        </div>
+        <%= link_to video_audits_path, class: "bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition flex items-center" do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+          New Audit
+        <% end %>
+      </div>
+
+      <!-- Projects Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <% @audits.each do |audit| %>
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            <!-- Thumbnail Placeholder -->
+            <div class="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500">
+              <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            <div class="p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900"><%= audit.video.filename if audit.video.present? %></h3>
+                <!-- Options dropdown would go here -->
+                <button type="button" class="text-gray-400 hover:text-gray-600">
+                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                </button>
+              </div>
+              <div class="flex items-center space-x-2 mb-4">
+                <% if audit.status == 'completed' %>
+                  <span class="inline-block bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">completed</span>
+                <% elsif audit.status == 'processing' %>
+                  <span class="inline-block bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">processing</span>
+                <% else %>
+                   <span class="inline-block bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full"><%= audit.status %></span>
+                <% end %>
+                 <span class="text-sm text-gray-500">Last run: <%= time_ago_in_words(audit.created_at) %> ago</span>
+              </div>
+              <div class="flex justify-between items-center">
+                 <span class="text-sm font-semibold text-gray-700">Score: <%= audit.score || 'N/A' %>/100</span>
+                 <%= link_to "View Report", video_audit_path(audit), class: "text-purple-600 hover:underline text-sm font-semibold" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+    </main>
+  </div>
+</div> 

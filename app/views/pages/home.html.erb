@@ -1,0 +1,279 @@
+<!-- Hero Section -->
+<section class="py-20 bg-[#f6f4ff]">
+  <div class="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-8">
+    <!-- Left: Text Content -->
+    <div class="md:w-1/2 text-left">
+      <span class="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">Coming Soon</span>
+      <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-2">Get Instant UX Feedback From Your App</h1>
+      <h2 class="text-4xl md:text-5xl font-extrabold text-purple-600 leading-tight mb-4">Just Upload a Workflow Video</h2>
+      <p class="text-lg text-gray-700 mb-8 max-w-xl">Let AI analyze your product and highlight friction points, design tweaks, and conversion boosters in minutes – no setup, no code, no guesswork.</p>
+      <form class="flex flex-col md:flex-row items-center gap-3 mb-3 max-w-xl">
+        <input type="email" placeholder="Enter your email" class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-300 focus:outline-none text-base" required>
+        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition">Join Early Access</button>
+        <a href="<%= projects_path %>" class="bg-white border border-gray-300 text-gray-900 font-semibold px-6 py-3 rounded-lg transition hover:bg-gray-100">Test a Demo</a>
+      </form>
+      <p class="text-sm text-gray-500">Join 100+ product teams already on the waitlist. No spam, just a heads-up when we launch.</p>
+    </div>
+    <!-- Right: Illustration Placeholder -->
+    <div class="md:w-1/2 flex justify-center mt-10 md:mt-0">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-semibold text-gray-500">UX Analysis Results</span>
+          <span class="flex space-x-1">
+            <span class="w-2 h-2 bg-red-300 rounded-full"></span>
+            <span class="w-2 h-2 bg-yellow-300 rounded-full"></span>
+            <span class="w-2 h-2 bg-green-300 rounded-full"></span>
+          </span>
+        </div>
+        <div class="space-y-3 mb-4">
+          <div class="rounded-lg bg-red-50 p-3">
+            <span class="font-bold text-red-600">1 Checkout Flow Friction</span>
+            <p class="text-sm text-red-700">Users struggle with the multi-step checkout form. Consider simplifying to a single page.</p>
+          </div>
+          <div class="rounded-lg bg-yellow-50 p-3">
+            <span class="font-bold text-yellow-600">2 Call-to-Action Visibility</span>
+            <p class="text-sm text-yellow-700">Primary CTA button blends with the background. Increase contrast and size by 20%.</p>
+          </div>
+          <div class="rounded-lg bg-green-50 p-3">
+            <span class="font-bold text-green-600">3 Good Login Experience</span>
+            <p class="text-sm text-green-700">Login flow is efficient and clear. Keep this pattern consistent across the app.</p>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="flex justify-between text-xs font-semibold text-gray-600 mb-1">
+            <span>Overall UX Score</span>
+            <span>72/100</span>
+          </div>
+          <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-yellow-400 to-green-400" style="width: 72%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works Section -->
+<section id="how-it-works" class="py-24 bg-[#f8f9fb]">
+  <div class="container mx-auto px-4">
+    <h2 class="text-4xl font-extrabold text-gray-900 text-center mb-4">How UXPilot Works</h2>
+    <p class="text-lg text-gray-500 text-center mb-16 max-w-2xl mx-auto">Get actionable UX insights in three simple steps, powered by advanced AI analysis.</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Step 1 -->
+      <div class="bg-white rounded-2xl shadow-lg p-10 flex flex-col items-center text-center">
+        <div class="w-16 h-16 flex items-center justify-center rounded-full bg-purple-100 mb-6">
+          <!-- Upload Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Upload Your Recording</h3>
+        <p class="text-gray-500 mb-6">Simply upload your screen recording (Loom, GIF, or MP4) of your product workflow or user journey.</p>
+        <div class="w-full border-t border-purple-100 mb-2"></div>
+        <span class="text-xs text-gray-400 tracking-widest font-semibold">STEP 1</span>
+      </div>
+      <!-- Step 2 -->
+      <div class="bg-white rounded-2xl shadow-lg p-10 flex flex-col items-center text-center">
+        <div class="w-16 h-16 flex items-center justify-center rounded-full bg-purple-100 mb-6">
+          <!-- Magnifier Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">AI Analyzes Your Flow</h3>
+        <p class="text-gray-500 mb-6">Our AI audits the interaction – detecting clicks, forms, drop-offs, and potential layout issues.</p>
+        <div class="w-full border-t border-purple-100 mb-2"></div>
+        <span class="text-xs text-gray-400 tracking-widest font-semibold">STEP 2</span>
+      </div>
+      <!-- Step 3 -->
+      <div class="bg-white rounded-2xl shadow-lg p-10 flex flex-col items-center text-center">
+        <div class="w-16 h-16 flex items-center justify-center rounded-full bg-purple-100 mb-6">
+          <!-- Lightbulb Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2a7 7 0 00-7 7c0 2.386 1.053 4.507 2.828 5.828A4.978 4.978 0 0011 21h2a4.978 4.978 0 002.172-6.172C17.947 13.507 19 11.386 19 9a7 7 0 00-7-7z" /></svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Get UX Insights</h3>
+        <p class="text-gray-500 mb-6">Receive a detailed UX report with improvement suggestions, wireframe tweaks, and A/B test ideas.</p>
+        <div class="w-full border-t border-purple-100 mb-2"></div>
+        <span class="text-xs text-gray-400 tracking-widest font-semibold">STEP 3</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Why Product Teams Love UXPilot Section -->
+<section id="benefits" class="py-24 bg-[#f6f4ff]">
+  <div class="container mx-auto px-4">
+    <h2 class="text-4xl font-extrabold text-gray-900 text-center mb-4">Why Product Teams Love UXPilot</h2>
+    <p class="text-lg text-gray-500 text-center mb-16 max-w-2xl mx-auto">Perfect for startups, indie makers, and fast-moving product teams who need UX insights quickly.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Card 1 -->
+      <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-lg font-bold text-gray-900">Catch Conversion Killers</span>
+        </div>
+        <p class="text-gray-500">Identify the hidden UX issues that are causing visitors to abandon your product.</p>
+      </div>
+      <!-- Card 2 -->
+      <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-lg font-bold text-gray-900">No User Testing Required</span>
+        </div>
+        <p class="text-gray-500">Skip expensive user testing sessions while still getting valuable UX insights.</p>
+      </div>
+      <!-- Card 3 -->
+      <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-lg font-bold text-gray-900">Save Design Time</span>
+        </div>
+        <p class="text-gray-500">Get specific design suggestions instead of guessing what needs to be improved.</p>
+      </div>
+      <!-- Card 4 -->
+      <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-lg font-bold text-gray-900">Increase Conversion Rates</span>
+        </div>
+        <p class="text-gray-500">Optimize your user flows to boost signups, purchases and feature adoption.</p>
+      </div>
+      <!-- Card 5 -->
+      <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-lg font-bold text-gray-900">Fix Issues Before Launch</span>
+        </div>
+        <p class="text-gray-500">Identify and fix UX problems before your users encounter them.</p>
+      </div>
+      <!-- Card 6 -->
+      <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
+        <div class="flex items-center mb-4">
+          <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-lg font-bold text-gray-900">Fast Implementation</span>
+        </div>
+        <p class="text-gray-500">Receive specific, actionable advice that your team can implement quickly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ Section -->
+<section id="faq" class="py-24 bg-[#f8f9fb]">
+  <div class="container mx-auto px-4 max-w-2xl">
+    <h2 class="text-4xl font-extrabold text-gray-900 text-center mb-4">Frequently Asked Questions</h2>
+    <p class="text-lg text-gray-500 text-center mb-12">Answers to common questions about UXPilot, video uploads, security, and more.</p>
+    <div id="faq-accordion" class="space-y-4">
+      <!-- FAQ Item 1 -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <button type="button" class="w-full flex justify-between items-center text-left faq-toggle font-semibold text-gray-900 text-lg">
+          What kind of videos can I upload?
+          <svg class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer mt-4 text-gray-600 text-base hidden">
+          You can upload any screen recording, product walkthrough, or user journey video in MP4, GIF, or Loom format. The video should showcase the flow or feature you want to analyze.
+        </div>
+      </div>
+      <!-- FAQ Item 2 -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <button type="button" class="w-full flex justify-between items-center text-left faq-toggle font-semibold text-gray-900 text-lg">
+          How does the AI detect UX issues?
+          <svg class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer mt-4 text-gray-600 text-base hidden">
+          Our AI analyzes your video to detect user interactions, interface elements, and potential points of friction. It's trained on thousands of UX best practices and can identify usability issues like confusing navigation, form issues, and conversion blockers.
+        </div>
+      </div>
+      <!-- FAQ Item 3 -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <button type="button" class="w-full flex justify-between items-center text-left faq-toggle font-semibold text-gray-900 text-lg">
+          How long does the analysis take?
+          <svg class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer mt-4 text-gray-600 text-base hidden">
+          Most analyses are completed within minutes, depending on the length and complexity of your video. You'll receive a notification when your UX report is ready.
+        </div>
+      </div>
+      <!-- FAQ Item 4 -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <button type="button" class="w-full flex justify-between items-center text-left faq-toggle font-semibold text-gray-900 text-lg">
+          Is my product data and video secure?
+          <svg class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer mt-4 text-gray-600 text-base hidden">
+          Yes, we take security seriously. Your videos are analyzed securely and never shared with third parties. All uploaded content is automatically deleted after 30 days, or you can delete it manually at any time.
+        </div>
+      </div>
+      <!-- FAQ Item 5 -->
+      <div class="bg-white rounded-xl shadow p-6">
+        <button type="button" class="w-full flex justify-between items-center text-left faq-toggle font-semibold text-gray-900 text-lg">
+          Do I need technical knowledge to implement the suggestions?
+          <svg class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer mt-4 text-gray-600 text-base hidden">
+          No, our suggestions are designed to be clear and actionable for both designers and non-designers. We provide visual examples and specific recommendations that you can easily share with your team.
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggles = document.querySelectorAll('.faq-toggle');
+      const answers = document.querySelectorAll('.faq-answer');
+      const icons = document.querySelectorAll('.faq-toggle svg');
+      toggles.forEach((toggle, idx) => {
+        toggle.addEventListener('click', function() {
+          answers.forEach((ans, i) => {
+            if (i === idx) {
+              ans.classList.toggle('hidden');
+              icons[i].classList.toggle('rotate-180');
+            } else {
+              ans.classList.add('hidden');
+              icons[i].classList.remove('rotate-180');
+            }
+          });
+        });
+      });
+    });
+  </script>
+</section>
+
+<!-- Early Access / Waitlist CTA Section -->
+<section id="early-access" class="py-24 flex justify-center items-center bg-[#f6f4ff]">
+  <div class="w-full max-w-4xl mx-auto rounded-3xl p-12 md:p-16 bg-gradient-to-br from-purple-500 to-purple-400 shadow-xl flex flex-col items-center">
+    <h2 class="text-3xl md:text-4xl font-extrabold text-white text-center mb-4">Want to improve your UX before your next release?</h2>
+    <p class="text-lg text-white text-center mb-8 max-w-2xl">Join the waitlist to get early access to UXPilot and start receiving AI-powered UX insights that will help you build better products.</p>
+    <form class="w-full flex flex-col md:flex-row items-center justify-center gap-4 mb-4 max-w-xl">
+      <input type="email" placeholder="Enter your email" class="flex-1 px-6 py-4 rounded-lg bg-white bg-opacity-20 text-white placeholder-white border border-white border-opacity-30 focus:ring-2 focus:ring-white focus:outline-none text-base" required>
+      <button type="submit" class="bg-white text-gray-900 font-semibold px-8 py-4 rounded-lg transition hover:bg-gray-100 text-base">Join the Waitlist</button>
+    </form>
+    <p class="text-sm text-white text-opacity-80 text-center">Built with privacy in mind – your videos are analyzed securely and never shared.</p>
+  </div>
+</section>
+
+<!-- Footer Section -->
+<footer class="bg-white py-16 mt-0 border-t border-gray-100">
+  <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between gap-12">
+    <!-- Brand -->
+    <div class="flex-1 mb-8 md:mb-0">
+      <div class="flex items-center mb-4">
+        <div class="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center text-white font-bold text-lg mr-2">UX</div>
+        <span class="text-2xl font-extrabold text-gray-800 tracking-tight">UXPilot</span>
+      </div>
+      <p class="text-gray-500 max-w-xs">UXPilot helps product teams identify UX improvements through AI-powered video analysis, making it easy to build better user experiences without expensive consultants or complex setups.</p>
+    </div>
+    <!-- Product Links -->
+    <div class="flex-1 mb-8 md:mb-0">
+      <h4 class="text-lg font-bold text-gray-900 mb-3">Product</h4>
+      <ul class="space-y-2">
+        <li><a href="#how-it-works" class="text-gray-600 hover:text-purple-600">How It Works</a></li>
+        <li><a href="#benefits" class="text-gray-600 hover:text-purple-600">Benefits</a></li>
+        <li><a href="#faq" class="text-gray-600 hover:text-purple-600">FAQ</a></li>
+      </ul>
+    </div>
+    <!-- Legal Links -->
+    <div class="flex-1">
+      <h4 class="text-lg font-bold text-gray-900 mb-3">Legal</h4>
+      <ul class="space-y-2">
+        <li><a href="#" class="text-gray-600 hover:text-purple-600">Privacy Policy</a></li>
+        <li><a href="#" class="text-gray-600 hover:text-purple-600">Terms of Service</a></li>
+      </ul>
+    </div>
+  </div>
+</footer> 
