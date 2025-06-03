@@ -66,14 +66,16 @@ document.querySelector('form').addEventListener('submit', function(e) {
     <h3>Previous Audits</h3>
     <% @audits.each do |audit| %>
       <div class="audit-item <%= audit.status %>">
-        <div class="audit-info">
+        <div class="audit-info" onclick="window.location.href='<%= video_audit_path(audit) %>'" style="cursor: pointer;">
           <span class="video-title"><%= audit.video.identifier %></span>
           <div class="audit-meta">
             <span class="timestamp"><%= audit.created_at.strftime("%b %d %H:%M") %></span>
             <span class="status <%= audit.status %>"><%= audit.status %></span>
-            <%= button_to video_audit_path(audit), method: :delete, class: "delete-button", form: { class: "delete-form" }, data: { confirm: "Are you sure you want to delete?" } do %>
-              Delete
-            <% end %>
+            <div onclick="event.stopPropagation();">
+              <%= button_to video_audit_path(audit), method: :delete, class: "delete-button", form: { class: "delete-form" }, data: { confirm: "Are you sure you want to delete?" } do %>
+                Delete
+              <% end %>
+            </div>
           </div>
         </div>
         <% if audit.failed? %>
