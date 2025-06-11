@@ -13,7 +13,7 @@ class VideoProcessingJob < ApplicationJob
       movie = FFMPEG::Movie.new(video_path)
       movie.screenshot(
         "#{frames_dir}/frame_%d.jpg",
-        { quality: 3, frame_rate: '1/5' }, # 1 frame every 5 seconds
+        { quality: 3, frame_rate: '1/1' }, # 1 frame every second
         validate: false
       )
 

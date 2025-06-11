@@ -77,7 +77,8 @@ Recommendations:
               {
                 type: "image_url",
                 image_url: {
-                  url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}"
+                  url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}",
+                  detail: "low" # 'low' (65 tokens) vs 'high' (1300+ tokens)
                 }
               }
             }
@@ -96,7 +97,7 @@ Recommendations:
         parameters: {
           model: "gpt-4o",
           messages: messages,
-          max_tokens: 1000
+          max_tokens: 3072
         }
       )
 
