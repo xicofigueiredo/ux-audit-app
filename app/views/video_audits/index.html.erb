@@ -65,7 +65,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
   <div class="past-audits">
     <h3>Previous Audits</h3>
     <% @audits.each do |audit| %>
-      <div class="audit-item <%= audit.status %>">
+      <%= link_to video_audit_path(audit), class: "audit-item #{audit.status}" do %>
         <div class="audit-info">
           <span class="video-title"><%= audit.video.identifier %></span>
           <div class="audit-meta">
@@ -81,7 +81,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
             <%= audit.llm_response %>
           </div>
         <% end %>
-      </div>
+      <% end %>
     <% end %>
   </div>
 <% end %>
