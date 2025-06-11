@@ -65,13 +65,8 @@ document.querySelector('form').addEventListener('submit', function(e) {
   <div class="past-audits">
     <h3>Previous Audits</h3>
     <% @audits.each do |audit| %>
-<<<<<<< HEAD
-      <%= link_to video_audit_path(audit), class: "audit-item #{audit.status}" do %>
-        <div class="audit-info">
-=======
       <div class="audit-item <%= audit.status %>">
         <div class="audit-info" onclick="window.location.href='<%= video_audit_path(audit) %>'" style="cursor: pointer;">
->>>>>>> a37279e0eddd7abc3d9e056cb99e9f7814e5cf7e
           <span class="video-title"><%= audit.video.identifier %></span>
           <div class="audit-meta">
             <span class="timestamp"><%= audit.created_at.strftime("%b %d %H:%M") %></span>
