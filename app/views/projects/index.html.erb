@@ -81,7 +81,34 @@
             </div>
             <div class="p-6">
               <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-900"><%= audit.video.filename if audit.video.present? %></h3>
+                <h3 class="text-lg font-bold text-gray-900">
+                  <% 
+                    # Try to get the workflow title from the LLM response
+                    workflow_title = nil
+                    if audit.llm_response.present?
+                      if audit.llm_response.is_a?(String)
+                        begin
+                          parsed_response = JSON.parse(audit.llm_response)
+                          workflow_title = parsed_response.dig('workflowSummary', 'workflowtitle')
+                        rescue JSON::ParserError
+                          # If JSON parsing fails, try to extract from string
+                          workflow_title = nil
+                        end
+                      elsif audit.llm_response.is_a?(Hash)
+                        workflow_title = audit.llm_response.dig('workflowSummary', 'workflowtitle')
+                      end
+                    end
+                    
+                    # Display the title with fallbacks
+                    if workflow_title.present?
+                      workflow_title
+                    elsif audit.video.present? && audit.video.filename.present?
+                      truncate(audit.video.filename.to_s, length: 30)
+                    else
+                      "Untitled Project"
+                    end
+                  %>
+                </h3>
                 <!-- Options dropdown would go here -->
                 <button type="button" class="text-gray-400 hover:text-gray-600">
                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
@@ -97,8 +124,7 @@
                 <% end %>
                  <span class="text-sm text-gray-500">Last run: <%= time_ago_in_words(audit.created_at) %> ago</span>
               </div>
-              <div class="flex justify-between items-center">
-                 <span class="text-sm font-semibold text-gray-700">Score: <%= audit.score || 'N/A' %>/100</span>
+              <div class="flex justify-end">
                  <%= link_to "View Report", video_audit_path(audit), class: "text-purple-600 hover:underline text-sm font-semibold" %>
               </div>
             </div>

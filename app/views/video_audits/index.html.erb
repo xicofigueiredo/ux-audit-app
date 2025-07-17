@@ -1,5 +1,12 @@
 <h2>UX Video Audits</h2>
 
+<% if flash[:alert] %>
+  <div class="alert error"><%= flash[:alert] %></div>
+<% end %>
+<div class="notice info">
+  <strong>Note:</strong> Only videos of 1 minute (60 seconds) or less will be processed.
+</div>
+
 <div class="upload-section" id="drop-zone">
   <%= form_with(model: VideoAudit.new, local: true, multipart: true) do |f| %>
     <div class="field">
@@ -7,11 +14,11 @@
         <%= f.file_field :video, accept: 'video/*', class: 'file-input' %>
       </div>
     </div>
-  </div>
-  <div class="button-center">
-    <%= f.submit "Analyze Video", class: 'upload-button' %>
-  </div>
+    <div class="button-center">
+      <%= f.submit "Analyze Video", class: 'upload-button' %>
+    </div>
   <% end %>
+</div>
 
 <div id="analysis-results"></div>
 
@@ -83,7 +90,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
             <%= audit.llm_response %>
           </div>
         <% end %>
-      <% end %>
+      </div>
     <% end %>
   </div>
 <% end %>

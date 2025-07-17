@@ -10,18 +10,40 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_28_125939) do
+ActiveRecord::Schema[7.1].define(version: 2025_06_18_163736) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "llm_partial_responses", force: :cascade do |t|
+    t.bigint "video_audit_id", null: false
+    t.integer "chunk_index"
+    t.jsonb "result"
+    t.string "status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["video_audit_id"], name: "index_llm_partial_responses_on_video_audit_id"
+  end
 
   create_table "video_audits", force: :cascade do |t|
     t.string "video"
     t.string "status", default: "pending"
-    t.text "llm_response"
+    t.jsonb "llm_response", default: []
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "frames", default: [], array: true
     t.integer "score"
   end
 
+  create_table "video_audits_backup", id: false, force: :cascade do |t|
+    t.bigint "id"
+    t.string "video"
+    t.string "status"
+    t.text "llm_response"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.text "frames", array: true
+    t.integer "score"
+  end
+
+  add_foreign_key "llm_partial_responses", "video_audits"
 end

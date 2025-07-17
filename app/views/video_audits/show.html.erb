@@ -1,109 +1,416 @@
 <%# app/views/video_audits/show.html.erb %>
-<div class="audit-result" data-audit-id="<%= @audit.id %>">
-  <h3>Analysis Status: <span class="status <%= @audit.status %>"><%= @audit.status %></span></h3>
 
-  <% if @audit.completed? %>
-    <div class="results-box">
-      <%= @audit.llm_response %>
+<div class="analysis-app-container">
+  <!-- Header -->
+  <header class="analysis-header">
+    <div class="header-left">
+      <a href="/" class="back-link">&larr; Back</a>
+      <span class="workflow-title">
+        <% short_title = @audit.llm_response.dig('workflowSummary', 'workflowtitle') %>
+        <% if short_title.present? %>
+          <%= short_title %>
+        <% else %>
+          <%= truncate(@audit.llm_response.dig('workflowSummary', 'userGoal').to_s, length: 40) %>
+        <% end %>
+      </span>
     </div>
-  <% elsif @audit.failed? %>
-    <div class="error-box">
-      <%= @audit.llm_response %>
-    </div>
-  <% else %>
-    <div class="processing">
-      <div class="spinner"></div>
-      <p>Processing video analysis...</p>
-    </div>
-  <% end %>
+  </header>
+
+  <div class="analysis-body">
+    <!-- Sidebar Timeline -->
+    <aside class="flow-timeline">
+      <h4>Flow Timeline</h4>
+      <ul class="timeline-steps">
+        <li class="timeline-step all-steps selected" onclick="highlightCard('all')">All Steps</li>
+        <% if @audit.llm_response["identifiedIssues"].is_a?(Array) %>
+          <% @audit.llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
+            <li class="timeline-step" onclick="highlightCard(<%= idx %>)">
+              <span class="step-title"><%= issue["painPointTitle"] %></span>
+              <% if issue["frameReference"] %>
+                <span class="step-time"><%= frame_range_to_time(issue["frameReference"]) %></span>
+              <% end %>
+            </li>
+          <% end %>
+        <% end %>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="analysis-main">
+      <% if @audit.llm_response.dig('workflowSummary') %>
+        <div class="main-summary-card full-width">
+          <h3>User Goal</h3>
+          <p><%= @audit.llm_response['workflowSummary']['userGoal'] %></p>
+          <% if @audit.llm_response['workflowSummary']['workflowSteps'].is_a?(Array) %>
+            <h4>Workflow Steps</h4>
+            <ol class="workflow-steps-list">
+              <% @audit.llm_response['workflowSummary']['workflowSteps'].each do |step| %>
+                <% clean_step = step.gsub(/^\d+\.\s*/, '') %>
+                <li><%= clean_step %></li>
+              <% end %>
+            </ol>
+          <% end %>
+        </div>
+      <% end %>
+      <div class="tab-content overview-tab active">
+        <% if @audit.completed? || @audit.status == 'partial' %>
+          <% if @audit.llm_response.is_a?(Hash) && @audit.llm_response["identifiedIssues"].is_a?(Array) %>
+            <div class="issue-card-grid">
+              <% @audit.llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
+                <div class="issue-card" id="issue-card-<%= idx %>">
+                  <% if issue["frameReference"] %>
+                    <div class="issue-timestamp">
+                      <span class="timestamp-label">Time:</span>
+                      <span class="timestamp-value"><%= frame_range_to_time(issue["frameReference"]) %></span>
+                    </div>
+                  <% end %>
+                  <div class="issue-card-header">
+                    <span class="issue-severity <%= issue["severity"].downcase %>">
+                      <%= issue["severity"].capitalize %>
+                    </span>
+                    <span class="issue-title"><%= issue["painPointTitle"] %></span>
+                  </div>
+                  <div class="issue-description">
+                    <%= issue["issueDescription"] %>
+                  </div>
+                  <div class="issue-recommendations">
+                    <strong>Recommendations:</strong>
+                    <ul>
+                      <% issue["recommendations"].each do |rec| %>
+                        <li><%= rec %></li>
+                      <% end %>
+                    </ul>
+                  </div>
+                  <div class="issue-card-actions">
+                    <button class="copy-btn" onclick="copyIssue(<%= @audit.id %>, <%= idx %>)">Copy</button>
+                    <button class="jira-btn">Jira</button>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="error-message">
+              Invalid analysis format. Please try again.
+            </div>
+          <% end %>
+        <% elsif @audit.failed? %>
+          <div class="error-box">
+            <% if @audit.llm_response.is_a?(Hash) && @audit.llm_response["error"] %>
+              <%= @audit.llm_response["error"] %>
+            <% else %>
+              <%= @audit.llm_response %>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="processing">
+            <div class="spinner"></div>
+            <p>Processing video analysis...</p>
+          </div>
+        <% end %>
+      </div>
+    </main>
+  </div>
 </div>
 
 <style>
-  .audit-result {
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
+.analysis-app-container {
+  font-family: 'Inter', sans-serif;
+  background: #f9fafb;
+  min-height: 100vh;
+}
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px 16px 40px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.header-left { display: flex; align-items: center; gap: 18px; }
+.back-link { color: #6366f1; text-decoration: none; font-weight: 500; }
+.workflow-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-left: 18px;
+  max-width: 700px;
+  white-space: pre-line;
+}
+.project-title { font-size: 1.5rem; font-weight: 600; margin: 0; }
+.analyzed-time { color: #6b7280; font-size: 0.95rem; margin-left: 8px; }
+.header-center { display: flex; align-items: center; gap: 8px; }
+.ux-score-label { color: #6b7280; font-size: 0.9rem; }
+.ux-score-value { color: #6366f1; font-size: 2rem; font-weight: 700; }
+.ux-score-circle { width: 36px; height: 36px; border: 3px solid #6366f1; border-radius: 50%; display: inline-block; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.export-btn, .share-btn { background: #f3f4f6; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer; }
+.export-btn:hover, .share-btn:hover { background: #e0e7ff; }
+.user-info { background: #ede9fe; color: #7c3aed; padding: 6px 14px; border-radius: 20px; font-weight: 500; }
 
-  .status {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-weight: 500;
-  }
+.analysis-body {
+  display: flex;
+  align-items: flex-start;
+}
+.flow-timeline {
+  width: 260px; /* increased from 220px */
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  padding: 32px 0 0 0;
+  min-height: calc(100vh - 72px);
+  /* 72px header height */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+}
+.flow-timeline h4 { margin-left: 32px; color: #374151; font-size: 1.1rem; font-weight: 600; }
+.timeline-steps { list-style: none; padding: 0 0 0 32px; margin: 24px 0 0 0; }
+.timeline-step {
+  padding: 10px 0;
+  color: #374151;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 6px;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.3;
+  max-width: 200px;
+}
+.timeline-step.selected, .timeline-step:hover { background: #f3f4f6; font-weight: 600; }
+.step-title { flex: 1; }
+.step-time { color: #6b7280; font-size: 0.95rem; margin-left: 12px; }
 
-  .status.pending {
-    background: #FEF3C7;
-    color: #92400E;
-  }
+.analysis-main { flex: 1; padding: 40px 48px; }
+.tabs { display: flex; gap: 16px; margin-bottom: 24px; }
+.tab { background: #f3f4f6; border: none; border-radius: 6px 6px 0 0; padding: 10px 24px; font-weight: 500; cursor: pointer; color: #6b7280; }
+.tab.active { background: #fff; color: #6366f1; border-bottom: 2px solid #6366f1; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
-  .status.completed {
-    background: #D1FAE5;
-    color: #065F46;
-  }
-
-  .status.failed {
-    background: #FEE2E2;
-    color: #991B1B;
-  }
-
-  .results-box, .error-box {
-    margin-top: 20px;
-    padding: 16px;
-    border-radius: 8px;
-    white-space: pre-wrap;
-  }
-
-  .results-box {
-    background: #F3F4F6;
-    border: 1px solid #E5E7EB;
-  }
-
-  .error-box {
-    background: #FEF2F2;
-    border: 1px solid #FCA5A5;
-  }
-
-  .processing {
-    text-align: center;
-    margin-top: 40px;
-  }
-
-  .spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #3B82F6;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 16px;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+.issue-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 32px;
+  margin-top: 24px;
+}
+.issue-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  padding: 28px 24px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+}
+.issue-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.issue-severity {
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 12px;
+  text-transform: capitalize;
+  display: inline-block;
+}
+.issue-severity.high { background: #fee2e2; color: #b91c1c; }
+.issue-severity.medium { background: #fef9c3; color: #b45309; }
+.issue-severity.low { background: #dbeafe; color: #1e40af; }
+.issue-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+.issue-description {
+  color: #374151;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+.issue-recommendations {
+  margin-bottom: 18px;
+  font-size: 0.98rem;
+}
+.issue-card-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+}
+.copy-btn, .jira-btn {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 18px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #6366f1;
+  transition: background 0.2s;
+}
+.copy-btn:hover, .jira-btn:hover {
+  background: #e0e7ff;
+}
+.issue-card-image {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  background: #f3f4f6;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+.frame-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+.frame-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a1a1aa;
+  font-size: 2.5rem;
+  background: #e5e7eb;
+}
+.placeholder-icon {
+  font-size: 2.5rem;
+}
+.issue-card.highlighted {
+  border: 2px solid #6366f1;
+  box-shadow: 0 0 0 2px #6366f1;
+}
+.issue-timestamp {
+  font-size: 0.98rem;
+  color: #6366f1;
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.timestamp-label {
+  color: #6b7280;
+  font-size: 0.97rem;
+  font-weight: 400;
+}
+.timestamp-value {
+  font-family: monospace;
+  background: #f3f4f6;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.summary-card {
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 18px 18px 12px 18px;
+  margin: 0 0 18px 24px;
+  box-shadow: 0 1px 4px rgba(99,102,241,0.06);
+}
+.summary-card h4 {
+  margin: 0 0 6px 0;
+  font-size: 1.08rem;
+  color: #6366f1;
+  font-weight: 700;
+}
+.summary-card p {
+  margin: 0;
+  color: #374151;
+  font-size: 0.98rem;
+}
+.main-summary-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 32px 18px 32px;
+  margin: 0 auto 32px auto;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.07);
+  max-width: 700px;
+  position: relative;
+}
+.main-summary-card h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.15rem;
+  color: #6366f1;
+  font-weight: 700;
+}
+.main-summary-card h4 {
+  margin: 18px 0 6px 0;
+  font-size: 1.05rem;
+  color: #6366f1;
+  font-weight: 600;
+}
+.main-summary-card p {
+  margin: 0;
+  color: #374151;
+  font-size: 1.08rem;
+}
+.workflow-steps-list {
+  margin: 0 0 0 18px;
+  padding: 0;
+  color: #374151;
+  font-size: 1rem;
+}
+.workflow-steps-list li {
+  margin-bottom: 4px;
+  list-style: disc;
+}
+.main-summary-card.full-width {
+  max-width: none;
+  width: 100%;
+  margin: 0 0 32px 0;
+  box-sizing: border-box;
+}
+.main-title { display: none; }
 </style>
 
 <script>
-function checkStatus() {
-  const auditId = document.querySelector('.audit-result').dataset.auditId;
-
-  fetch(`/video_audits/${auditId}`, {
-    headers: {
-      'Accept': 'application/json'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.status === 'pending') {
-      setTimeout(checkStatus, 2000); // Check again in 2 seconds
-    } else {
-      window.location.reload(); // Reload page when status changes
-    }
+// Tab switching logic
+const tabs = document.querySelectorAll('.tab');
+const tabContents = document.querySelectorAll('.tab-content');
+tabs.forEach((tab, idx) => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tabContents.forEach(tc => tc.classList.remove('active'));
+    tab.classList.add('active');
+    tabContents[idx].classList.add('active');
   });
+});
+
+function copyIssue(auditId, idx) {
+  const card = document.querySelectorAll('.issue-card')[idx];
+  if (!card) return;
+  let text = '';
+  text += card.querySelector('.issue-title')?.innerText + '\n';
+  text += card.querySelector('.issue-description')?.innerText + '\n';
+  text += 'Recommendations:\n';
+  card.querySelectorAll('.issue-recommendations li').forEach(li => {
+    text += '- ' + li.innerText + '\n';
+  });
+  navigator.clipboard.writeText(text);
 }
 
-if (document.querySelector('.status.pending')) {
-  checkStatus();
+// Highlight feedback card when timeline step is clicked
+function highlightCard(idx) {
+  const cards = document.querySelectorAll('.issue-card');
+  cards.forEach((card, i) => {
+    card.classList.remove('highlighted');
+    if (idx === 'all' || idx === undefined) {
+      card.style.display = '';
+    } else if (i === idx) {
+      card.classList.add('highlighted');
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
 }
 </script>

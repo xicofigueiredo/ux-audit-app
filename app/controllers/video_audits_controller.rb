@@ -6,18 +6,21 @@ class VideoAuditsController < ApplicationController
 
   def create
     @audit = VideoAudit.new(video_audit_params)
+    if params[:video_audit] && params[:video_audit][:video].present?
+      movie = FFMPEG::Movie.new(params[:video_audit][:video].path)
+      if movie.duration > 60
+        flash.now[:alert] = "Video is too long (#{movie.duration.round}s). Please upload a video of 1 minute or less."
+        @audits = VideoAudit.all
+        render :index and return
+      end
+    end
 
     if @audit.save
       VideoProcessingJob.perform_later(@audit.id)
-      respond_to do |format|
-        format.html { redirect_to video_audit_path(@audit) }
-        format.json { render json: { id: @audit.id, redirect_url: video_audit_path(@audit) } }
-      end
+      redirect_to video_audit_path(@audit)
     else
-      respond_to do |format|
-        format.html { render :index }
-        format.json { render json: { errors: @audit.errors }, status: :unprocessable_entity }
-      end
+      @audits = VideoAudit.all
+      render :index
     end
   end
 

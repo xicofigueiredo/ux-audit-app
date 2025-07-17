@@ -1,138 +1,180 @@
 # app/jobs/llm_analysis_job.rb
+require 'csv'
+require 'json'
+
 class LlmAnalysisJob < ApplicationJob
   queue_as :default
 
-  PROMPT_TEMPLATE = """
- Agent Role: You are an expert UX/UI Analyst. Your primary goal is to meticulously review user workflow videos to identify usability issues, design inconsistencies, and areas for improvement in digital interfaces.
+  PROMPT_TEMPLATE = <<-PROMPT
 
-Core Task:
-Analyze the provided user workflow video. Identify and report on specific moments in the video that demonstrate UX/UI problems or opportunities for enhancement. For each identified issue, provide a concise analysis and actionable recommendations.
+  ### ROLE & GOAL ###
+You are a highly sought-after UX/UI Principal Analyst. Your insights are specific, actionable, and grounded in established usability heuristics. You avoid generic advice. Your primary goal is to perform a complete usability audit of a user workflow, represented by a sequence of image frames. You have already analyzed several batches of frames from a user journey video. Now, combine all findings into a single, unified analysis.
 
-Input:
+### CRITICAL INSTRUCTION: ANALYZE THE ENTIRE FRAME SEQUENCE ###
+The image frames are provided in chronological order and represent a user's journey over time. You MUST analyze the entire sequence and distribute your findings across all relevant frames. A good analysis will reference multiple, different frames.
 
-A video recording of a user interacting with a digital product or service.
-(Optional) Any specific areas of concern or focus provided by the user.
-Output Structure (per identified issue):
-For each issue you identify, you MUST provide the following information in a structured format. Use clear headings for each piece of information. The output should in JSON format.
-Timestamp: The exact start time (HH:MM:SS) in the video where the issue is most clearly visible or begins.
-PainPointTitle: A concise title summarizing the UX/UI issue (e.g., 'Confusing Navigation Path,' 'Low Contrast CTA,' 'Inefficient Multi-Step Form').
-Severity: An assessment of the issue's impact on the user experience. Use one of the following predefined categories:
-High: Prevents task completion, causes significant user frustration or errors.
-Medium: Causes some difficulty or inefficiency but doesn't block task completion.
-Low: Minor inconvenience, or opportunity for optimization, but doesn't significantly hinder the user.
-IssueDescription: A detailed explanation of the problem. Describe what the user is trying to do, what happens in the video at this timestamp, and why it constitutes a UX/UI issue. Reference specific visual elements or interactions.
-Recommendations: Provide clear, actionable, and specific recommendations to address the identified issue. If multiple recommendations apply, list them as bullet points.
-Example Recommendation: 'Increase the font size of the primary call-to-action button to at least 16px to improve readability and contrast.'
-Example Recommendation: 'Reduce the checkout process to a single page by combining shipping and payment information sections.'
+### YOUR STEP-BY-STEP ANALYTICAL PROCESS ###
+To ensure a world-class audit, you MUST follow this thinking process:
+1.  **Synthesize the Overall Journey:** Review all frames to understand the user's primary goal (e.g., 'User wants to book a one-way flight from Lisbon to London').
+2.  **Deconstruct into Key Steps:** Group the frames into the distinct stages of the journey (e.g., '1. Flight Search', '2. Date Selection', '3. Results Review', '4. Passenger Details').
+3.  **Analyze Each Step for Friction:** For each step, meticulously examine the frames. For every issue you find, you must first state the usability principle or heuristic being violated (e.g., 'This violates the principle of Recognition rather than recall...') before describing the problem.
 
-Key Guidelines for Analysis & Reporting:
+### OUTPUT FORMAT: STRICT JSON ###
+- Your entire response MUST be a single, valid JSON object.
+- Do NOT include any text, notes, or explanations outside of the JSON structure. Your response must begin with '{' and end with '}'.
+- NEVER start you output with a non JSON, like "i'm" or any other thing other than a JSON object.
 
-Focus on Actionable Insights: Prioritize issues that, if addressed, would tangibly improve the user experience.
-Be Specific: Vague descriptions are not helpful. Pinpoint exact elements, interactions, and moments.
-Provide Rationale: Briefly explain why something is an issue (e.g., ‘violates established usability heuristics,’ ‘creates cognitive load,’ ‘is inconsistent with platform conventions’).
-Maintain Objectivity: Base your analysis on established UX/UI principles and observed user behavior in the frames of the video.
-'Escape Hatch’ for Ambiguity: If a particular segment of the frames of the video is unclear, or if you lack sufficient information to make a confident assessment, explicitly state this. Do not guess. You can note it as: DebugInfo: ‘Could not determine [specifics] due to [reason, e.g., frames of the video quality, unclear user intent].’
-Consider the Flow Timeline (as per mockup): If possible, group findings by the larger ‘steps’ in the user's workflow (e.g., Landing Page, Product Selection, Checkout Form). If the frames of the video shows distinct phases, try to categorize your findings under these phases.
-Example of a Single Issue Output (Conceptual):
+{
+  "workflowSummary": {
+    "workflowtitle": "A short title of the workflow"
+    "userGoal": "A string describing the user's primary objective.",
+    "workflowSteps": [
+      "An array of strings listing the distinct workflow steps you identified."
+    ],
+    "totalFramesAnalyzed": "The total number of frames you analyzed."
+  },
+  "identifiedIssues": [
+    {
+      "frameReference": "A string indicating the specific frame number(s) where the issue is most evident (e.g., 'Frame 5', 'Frames 12-14').",
+      "painPointTitle": "A concise, descriptive title for the UX issue.",
+      "severity": "A string with one of three exact values: 'High', 'Medium', or 'Low'.",
+      "issueDescription": "A detailed explanation of the problem. Start with the heuristic being violated. Then describe the issue with specific references to UI elements in the frames.",
+      "recommendations": [
+        "An array of strings, where each string is a concrete, actionable recommendation."
+      ]
+    }
+  ]
+}
 
-Timestamp: 0:47
-PainPointTitle: Checkout Form - Multi-Step Confusion
-Severity: High
-IssueDescription: At 0:47, the user hesitates when moving from the shipping address step to the payment information step in the checkout form. The progress indicators are not clear, and the user seems unsure if their previous information was saved. This multi-step process without clear feedback is causing friction and potential abandonment.
-Recommendations:
-•⁠  ⁠Reduce the checkout to a single page to display all required fields at once.
-•⁠  ⁠If a multi-step process is retained, add clear, prominent progress indicators (e.g., ‘Step 1 of 3: Shipping’).
-•⁠  ⁠Improve error message clarity and placement for any mistakes made during form filling.
+  Your response must be a single valid JSON object and nothing else. Do not include any text, notes, or explanations outside the JSON structure. Your response must begin with '{' and end with '}'.
+  **Do not use any other top-level keys. Do not include any text, notes, or explanations outside the JSON object. Your response must begin with '{' and end with '}'.**
+  PROMPT
 
+  BATCH_SIZE = 20
 
-  """
+  def extract_json(text)
+    first_brace = text.index('{')
+    last_brace = text.rindex('}')
+    return text if first_brace.nil? || last_brace.nil?
+    text[first_brace..last_brace]
+  end
+
+  def map_llm_output_to_schema(parsed)
+    # If already in correct format, return as is
+    if parsed.is_a?(Hash) && parsed.key?("workflowSummary") && parsed.key?("identifiedIssues")
+      return parsed
+    end
+    # Try to map common alternative keys to expected schema
+    mapped = {}
+    if parsed.is_a?(Hash)
+      # Handle flattened structure
+      if parsed.key?("userGoal") && parsed.key?("workflowSteps") && parsed.key?("totalFramesAnalyzed")
+        mapped["workflowSummary"] = {
+          "userGoal" => parsed["userGoal"],
+          "workflowSteps" => parsed["workflowSteps"],
+          "totalFramesAnalyzed" => parsed["totalFramesAnalyzed"]
+        }
+      end
+      # Map issues/recommendations
+      if parsed.key?("commonIssues")
+        mapped["identifiedIssues"] = parsed["commonIssues"]
+      elsif parsed.key?("holisticRecommendations")
+        mapped["identifiedIssues"] = parsed["holisticRecommendations"]
+      end
+      # If both mapped, return
+      if mapped.key?("workflowSummary") && mapped.key?("identifiedIssues")
+        Rails.logger.error("LLM mapping: mapped alternative keys to expected schema")
+        return mapped
+      end
+    end
+    # If not mappable, return original
+    parsed
+  end
 
   def perform(video_audit_id)
     audit = VideoAudit.find(video_audit_id)
-
+    frame_paths = Array(audit.frames)
+    batch_count = (frame_paths.size / BATCH_SIZE.to_f).ceil
+    batch_summaries = []
+    api_key = ENV['OPENAI_API_KEY']
+    if api_key.blank?
+      raise "OpenAI API key is not set. Please check your .env file"
+    end
+    client = OpenAI::Client.new(
+      access_token: api_key,
+      uri_base: "https://api.openai.com/v1",
+      request_timeout: 300
+    )
     begin
-      # Debug API key presence
-      api_key = ENV['OPENAI_API_KEY']
-      if api_key.blank?
-        raise "OpenAI API key is not set. Please check your .env file"
+      frame_paths.each_slice(BATCH_SIZE).with_index do |batch, idx|
+        prompt = <<~PROMPT
+          These are frames #{idx * BATCH_SIZE + 1}-#{[frame_paths.size, (idx + 1) * BATCH_SIZE].min} of #{frame_paths.size} from a single user journey. Please analyze and summarize key UX issues, noting that more frames will follow if this is not the last batch.\n\n#{PROMPT_TEMPLATE}
+        PROMPT
+        messages = [
+          { role: "user", content: [{ type: "text", text: prompt }] + batch.map { |frame| { type: "image_url", image_url: { url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}", detail: "low" } } } }
+        ]
+        response = client.chat(parameters: { model: "gpt-4o", messages: messages, max_tokens: 3072 })
+        summary = response.dig("choices", 0, "message", "content")
+        # Use JSON extraction helper for batch summary
+        extracted_summary = extract_json(summary)
+        LlmPartialResponse.create!(video_audit: audit, chunk_index: idx, result: extracted_summary, status: "completed")
+        batch_summaries << extracted_summary
       end
-      Rails.logger.info "OpenAI API Key is present"
+      # Synthesize holistic analysis
+      synthesis_prompt = <<~PROMPT
+        Combine the following batch findings into a single, unified analysis. Output only a single valid JSON object matching the schema below, with no extra text.
 
-      frame_paths = audit.frames.is_a?(String) ? [audit.frames.gsub(/[{}]/, '')] : audit.frames
-      Rails.logger.info "Processing frames: #{frame_paths}"
+        Batch Findings:
+        #{batch_summaries.join("\n\n")}
 
-      # Verify frames exist
-      frame_paths.each do |frame|
-        unless File.exist?(frame)
-          raise "Frame file not found: #{frame}"
-        end
-      end
-
-      messages = [
         {
-          role: "user",
-          content: [
-            { type: "text", text: PROMPT_TEMPLATE },
-            *frame_paths.map { |frame|
-              {
-                type: "image_url",
-                image_url: {
-                  url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}",
-                  detail: "low" # 'low' (65 tokens) vs 'high' (1300+ tokens)
-                }
-              }
-            }
-          ]
+          "workflowSummary": {
+            "userGoal": "",
+            "workflowSteps": [],
+            "totalFramesAnalyzed": ""
+          },
+          "identifiedIssues": []
         }
+
+        Instructions:
+        - Fill in the values for each field based on the batch findings.
+        - Do not add any other keys or text.
+        - Your response must begin with '{' and end with '}'.
+      PROMPT
+      messages = [
+        { role: "user", content: [{ type: "text", text: synthesis_prompt }] }
       ]
-
-      client = OpenAI::Client.new(
-        access_token: api_key,
-        uri_base: "https://api.openai.com/v1",  # Make sure we use v1
-        request_timeout: 300
-      )
-
-      Rails.logger.info "Sending request to OpenAI..."
-      response = client.chat(
-        parameters: {
-          model: "gpt-4o",
-          messages: messages,
-          max_tokens: 3072
-        }
-      )
-
-      Rails.logger.info "OpenAI Response: #{response.inspect}"
-
-      if response.dig("error", "message")
-        raise "OpenAI API Error: #{response['error']['message']}"
+      response = client.chat(parameters: { model: "gpt-4o", messages: messages, max_tokens: 3072 })
+      holistic_analysis = response.dig("choices", 0, "message", "content")
+      begin
+        # Use JSON extraction helper for holistic analysis
+        parsed_analysis = JSON.parse(extract_json(holistic_analysis))
+        Rails.logger.error("LLM Parsed Analysis: #{parsed_analysis.inspect}")
+        # Map alternative keys to expected schema if needed
+        parsed_analysis = map_llm_output_to_schema(parsed_analysis)
+        required_keys = %w[workflowSummary identifiedIssues]
+        unless required_keys.all? { |k| parsed_analysis.key?(k) }
+          # Fallback: unwrap if single top-level key whose value is a Hash with required keys
+          if parsed_analysis.is_a?(Hash) && parsed_analysis.keys.size == 1
+            inner = parsed_analysis.values.first
+            if inner.is_a?(Hash) && required_keys.all? { |k| inner.key?(k) }
+              Rails.logger.error("LLM fallback: unwrapped inner object from key #{parsed_analysis.keys.first}")
+              parsed_analysis = inner
+            end
+          end
+        end
+        unless required_keys.all? { |k| parsed_analysis.key?(k) }
+          raise "LLM response missing required keys: #{parsed_analysis.keys}"
+        end
+      rescue JSON::ParserError => e
+        raise "OpenAI response is not valid JSON: #{e.message}"
       end
-
-      # Extract the response content
-      analysis = response.dig("choices", 0, "message", "content")
-
-      if analysis.blank?
-        raise "No analysis content in OpenAI response"
-      end
-
-      # Update the audit with the analysis
-      audit.update!(
-        status: 'completed',
-        llm_response: analysis
-      )
-
-      # Schedule cleanup
+      audit.update!(status: 'completed', llm_response: parsed_analysis)
       CleanupJob.perform_later(audit.id)
-
     rescue => e
       Rails.logger.error("LLM Analysis Error: #{e.message}")
       Rails.logger.error(e.backtrace.join("\n"))
-
-      audit.update!(
-        status: 'failed',
-        llm_response: "Error analyzing frames: #{e.message}"
-      )
-
-      # Schedule cleanup even if analysis fails
+      audit.update!(status: 'failed', llm_response: "Error analyzing frames: #{e.message}")
       CleanupJob.perform_later(audit.id)
     end
   end

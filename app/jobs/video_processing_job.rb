@@ -9,16 +9,13 @@ class VideoProcessingJob < ApplicationJob
       frames_dir = Rails.root.join('tmp', 'frames', audit.id.to_s)
       FileUtils.mkdir_p(frames_dir)
 
-      # Extract key frames using FFmpeg
-      movie = FFMPEG::Movie.new(video_path)
-      movie.screenshot(
-        "#{frames_dir}/frame_%d.jpg",
-        { quality: 3, frame_rate: '1/1' }, # 1 frame every second
-        validate: false
-      )
+      # Extract frames using FFmpeg directly (1 frame per second)
+      require 'shellwords'
+      system("ffmpeg -i #{Shellwords.escape(video_path)} -vf fps=1 #{Shellwords.escape(frames_dir)}/frame_%04d.jpg")
 
       # Store frame paths as an array
       frame_paths = Dir.glob("#{frames_dir}/frame_*.jpg")
+      Rails.logger.info "Extracted frames: \n#{frame_paths.inspect} (count: #{frame_paths.size})"
       audit.update!(frames: frame_paths)
 
       LlmAnalysisJob.perform_later(audit.id)
