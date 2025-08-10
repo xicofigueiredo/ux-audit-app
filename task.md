@@ -1,0 +1,229 @@
+# LLM Analysis Job Modernization Task List
+
+## Phase 1: Foundation & Configuration (Priority: High) ✅ COMPLETED
+
+### 1.1 Environment Configuration ✅
+- [x] Add environment variables for model configuration
+  - [x] `GPT_MODEL` (default: gpt-5o)
+  - [x] `GPT_TEMPERATURE` (default: 0.1)
+  - [x] `GPT_MAX_TOKENS` (default: 4000)
+  - [x] `GPT_BATCH_SIZE` (default: 50)
+  - [x] `GPT_TIMEOUT` (default: 300)
+- [x] Create `.env.example` with new variables
+- [x] Update documentation for new environment variables
+
+### 1.2 Configuration Management ✅
+- [x] Create `app/config/llm_config.rb`
+  - [x] Define `LlmConfig` class
+  - [x] Add model selection logic with fallbacks
+  - [x] Add validation for required environment variables
+  - [x] Add configuration validation methods
+- [x] Add configuration tests in `test/config/llm_config_test.rb`
+
+### 1.3 Service Layer Foundation ✅
+- [x] Create service directory structure
+  - [x] `app/services/llm/`
+  - [x] `app/services/llm/base_service.rb`
+  - [x] Create base service class with common functionality
+- [x] Add service layer foundation
+
+## Phase 2: Core Service Implementation (Priority: High)
+
+### 2.1 Prompt Generator Service
+- [ ] Extract prompt generation logic from current job
+- [ ] Create `PromptGenerator` class
+  - [ ] Add system message generation
+  - [ ] Add user message generation with examples
+  - [ ] Add few-shot example integration
+  - [ ] Add chain-of-thought prompt structure
+  - [ ] Add temperature and model-specific prompt adjustments
+- [ ] Add prompt validation methods
+- [ ] Create comprehensive tests for prompt generation
+
+### 2.2 Response Parser Service
+- [ ] Create `ResponseParser` class
+  - [ ] Implement JSON Schema validation
+  - [ ] Add response quality scoring
+  - [ ] Add partial response handling
+  - [ ] Add response versioning
+  - [ ] Add structured data extraction
+- [ ] Create JSON Schema definitions
+- [ ] Add parser error handling and recovery
+- [ ] Add comprehensive tests
+
+### 2.3 Video Processor Service
+- [ ] Create `VideoProcessor` class
+  - [ ] Extract frame processing logic
+  - [ ] Add batch size optimization
+  - [ ] Add parallel processing capabilities
+  - [ ] Add frame quality assessment
+  - [ ] Add processing progress tracking
+- [ ] Add video processing tests
+
+### 2.4 Analysis Service (Orchestrator)
+- [ ] Create `AnalysisService` class
+  - [ ] Orchestrate all other services
+  - [ ] Add workflow management
+  - [ ] Add error handling and recovery
+  - [ ] Add progress tracking
+  - [ ] Add result aggregation
+- [ ] Add service integration tests
+
+## Phase 3: GPT-5 Optimization (Priority: Medium)
+
+### 3.1 Function Calling Implementation
+- [ ] Define JSON schema as function parameters
+- [ ] Update prompt generator to use function calling
+- [ ] Update response parser to handle function calls
+- [ ] Add function calling validation
+- [ ] Add tests for function calling
+
+### 3.2 Enhanced Prompting
+- [ ] Implement system messages for role definition
+- [ ] Add reasoning steps to prompts
+- [ ] Add few-shot examples
+- [ ] Add chain-of-thought prompting
+- [ ] Add model-specific prompt optimizations
+- [ ] Test prompt effectiveness
+
+### 3.3 Context Optimization
+- [ ] Implement larger batch processing
+- [ ] Add context window optimization
+- [ ] Implement streaming responses
+- [ ] Add real-time progress updates
+- [ ] Test performance improvements
+
+## Phase 4: Error Handling & Resilience (Priority: Medium)
+
+### 4.1 Retry Logic
+- [ ] Implement exponential backoff
+- [ ] Add retry configuration
+- [ ] Add retry logging
+- [ ] Add retry tests
+
+### 4.2 Circuit Breaker Pattern
+- [ ] Implement circuit breaker for API failures
+- [ ] Add failure threshold configuration
+- [ ] Add recovery time configuration
+- [ ] Add circuit breaker monitoring
+- [ ] Add circuit breaker tests
+
+### 4.3 Timeout Handling
+- [ ] Add request timeout handling
+- [ ] Add job timeout handling
+- [ ] Add graceful degradation
+- [ ] Add timeout configuration
+- [ ] Add timeout tests
+
+### 4.4 Partial Response Handling
+- [ ] Implement partial response detection
+- [ ] Add partial response recovery
+- [ ] Add partial response validation
+- [ ] Add partial response tests
+
+## Phase 5: Monitoring & Observability (Priority: Low)
+
+### 5.1 Structured Logging
+- [ ] Implement structured logging
+- [ ] Add correlation IDs
+- [ ] Add log levels configuration
+- [ ] Add log formatting
+- [ ] Add logging tests
+
+### 5.2 Performance Metrics
+- [ ] Add token usage tracking
+- [ ] Add cost tracking
+- [ ] Add processing time metrics
+- [ ] Add success rate tracking
+- [ ] Add performance dashboard
+
+### 5.3 Health Checks
+- [ ] Implement health check endpoints
+- [ ] Add service health monitoring
+- [ ] Add dependency health checks
+- [ ] Add health check tests
+
+## Phase 6: Database & Data Flow (Priority: Low)
+
+### 6.1 Response Versioning
+- [ ] Add response schema versioning
+- [ ] Add migration strategy for old responses
+- [ ] Add version compatibility checks
+- [ ] Add versioning tests
+
+### 6.2 Structured Data Storage
+- [ ] Add structured data columns to database
+- [ ] Add data migration scripts
+- [ ] Add data validation
+- [ ] Add data integrity checks
+
+### 6.3 Response Quality Scoring
+- [ ] Implement quality scoring algorithm
+- [ ] Add quality thresholds
+- [ ] Add quality monitoring
+- [ ] Add quality improvement suggestions
+
+## Phase 7: Testing & Documentation (Priority: Medium)
+
+### 7.1 Comprehensive Testing
+- [ ] Add unit tests for all services
+- [ ] Add integration tests
+- [ ] Add end-to-end tests
+- [ ] Add performance tests
+- [ ] Add error scenario tests
+
+### 7.2 Documentation
+- [ ] Update API documentation
+- [ ] Add service documentation
+- [ ] Add configuration documentation
+- [ ] Add troubleshooting guide
+- [ ] Add performance tuning guide
+
+### 7.3 Code Quality
+- [ ] Add code linting
+- [ ] Add code formatting
+- [ ] Add code coverage requirements
+- [ ] Add code review guidelines
+
+## Phase 8: Deployment & Migration (Priority: High)
+
+### 8.1 Gradual Migration
+- [ ] Implement feature flags for new services
+- [ ] Add A/B testing capability
+- [ ] Add rollback procedures
+- [ ] Add migration scripts
+
+### 8.2 Performance Validation
+- [ ] Benchmark new implementation
+- [ ] Compare with old implementation
+- [ ] Validate cost improvements
+- [ ] Validate quality improvements
+
+### 8.3 Production Deployment
+- [ ] Deploy to staging environment
+- [ ] Run full test suite
+- [ ] Deploy to production
+- [ ] Monitor performance
+- [ ] Gather feedback
+
+## Implementation Notes
+
+### Dependencies Between Phases
+- Phase 1 must be completed before Phase 2
+- Phase 2 must be completed before Phase 3
+- Phase 4 can be implemented in parallel with Phase 3
+- Phase 5-7 can be implemented in parallel
+- Phase 8 depends on all previous phases
+
+### Risk Mitigation
+- Implement feature flags for gradual rollout
+- Maintain backward compatibility during migration
+- Keep old implementation as fallback
+- Monitor performance and costs closely
+
+### Success Metrics
+- Reduced processing time
+- Improved response quality
+- Lower API costs
+- Better error handling
+- Improved user experience 

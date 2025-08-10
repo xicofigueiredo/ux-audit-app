@@ -1,16 +1,63 @@
 <%# app/views/video_audits/show.html.erb %>
 
+<% if @audit.status == 'pending' %>
+  <div class="analysis-app-container" style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <div style="text-align: center;">
+      <div class="spinner" style="margin-bottom: 24px; width: 48px; height: 48px; border: 6px solid #e5e7eb; border-top: 6px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <h2 style="font-size: 1.5rem; color: #6366f1; font-weight: 700; margin-bottom: 12px;">We are analyzing your workflow...</h2>
+      <p style="color: #374151; font-size: 1.1rem;">This may take up to a minute. Please keep this page open.<br/>The report will appear automatically when ready.</p>
+    </div>
+  </div>
+  <script>
+    // Poll every 5 seconds to check if the audit is complete
+    setInterval(function() {
+      fetch(window.location.pathname + '.json')
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'completed') {
+            window.location.reload();
+          }
+        });
+    }, 5000);
+  </script>
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+<% else %>
 <div class="analysis-app-container">
   <!-- Header -->
   <header class="analysis-header">
     <div class="header-left">
       <a href="/" class="back-link">&larr; Back</a>
       <span class="workflow-title">
-        <% short_title = @audit.llm_response.dig('workflowSummary', 'workflowtitle') %>
+        <%
+          llm = @audit.llm_response
+          short_title = nil
+          user_goal = nil
+
+          if llm.present?
+            if llm.is_a?(String) && llm.strip.start_with?('{')
+              begin
+                llm = JSON.parse(llm)
+              rescue JSON::ParserError
+                llm = {}
+              end
+            end
+            if llm.is_a?(Hash)
+              short_title = llm.dig('workflowSummary', 'workflowtitle')
+              user_goal = llm.dig('workflowSummary', 'userGoal')
+            end
+          end
+        %>
         <% if short_title.present? %>
           <%= short_title %>
+        <% elsif user_goal.present? %>
+          <%= truncate(user_goal, length: 40) %>
         <% else %>
-          <%= truncate(@audit.llm_response.dig('workflowSummary', 'userGoal').to_s, length: 40) %>
+          <%= @audit.status.capitalize %>
         <% end %>
       </span>
     </div>
@@ -414,3 +461,4 @@ function highlightCard(idx) {
   });
 }
 </script>
+<% end %>
