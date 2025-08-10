@@ -1,7 +1,6 @@
 # app/services/llm/base_service.rb
 module Llm
   class BaseService
-    include LlmConfig
 
     attr_reader :logger
 

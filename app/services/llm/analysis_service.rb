@@ -8,6 +8,7 @@ module Llm
       @prompt_generator = PromptGenerator.new
       @response_parser = ResponseParser.new
       @video_processor = VideoProcessor.new
+      @function_calling_service = FunctionCallingService.new
       @openai_client = create_openai_client
     end
 
@@ -140,10 +141,17 @@ module Llm
       end
       
       # Parse and validate response
-      parsed_result = @response_parser.parse_response(
-        response.dig("choices", 0, "message", "content"),
-        context: { batch_index: batch_index, audit_id: audit_id }
-      )
+      if @function_calling_service.function_calling_supported?
+        parsed_result = @function_calling_service.process_function_call(
+          response,
+          context: { batch_index: batch_index, audit_id: audit_id }
+        )
+      else
+        parsed_result = @response_parser.parse_response(
+          response.dig("choices", 0, "message", "content"),
+          context: { batch_index: batch_index, audit_id: audit_id }
+        )
+      end
       
       log_info("Batch processed successfully", 
         batch_index: batch_index,
@@ -173,10 +181,17 @@ module Llm
       end
       
       # Parse synthesis result
-      final_result = @response_parser.parse_response(
-        synthesis_response.dig("choices", 0, "message", "content"),
-        context: { synthesis: true, audit_id: audit_id }
-      )
+      if @function_calling_service.function_calling_supported?
+        final_result = @function_calling_service.process_function_call(
+          synthesis_response,
+          context: { synthesis: true, audit_id: audit_id }
+        )
+      else
+        final_result = @response_parser.parse_response(
+          synthesis_response.dig("choices", 0, "message", "content"),
+          context: { synthesis: true, audit_id: audit_id }
+        )
+      end
       
       # Calculate overall quality score
       overall_quality = calculate_overall_quality(batch_results, final_result)
@@ -217,10 +232,8 @@ module Llm
       }
       
       # Add function calling for GPT-5
-      if LlmConfig.gpt_5?
-        parameters[:functions] = [@prompt_generator.generate_function_parameters]
-        parameters[:function_call] = { name: "analyze_ux_workflow" }
-      end
+      function_params = @function_calling_service.api_parameters
+      parameters.merge!(function_params) if function_params.any?
       
       response = @openai_client.chat(parameters: parameters)
       

@@ -3,7 +3,7 @@ module Llm
   class PromptGenerator < BaseService
     include LlmConfig
 
-    # System message templates for different models
+    # Enhanced system message templates for different models
     SYSTEM_MESSAGES = {
       'gpt-5o' => <<~SYSTEM,
         You are a highly sought-after UX/UI Principal Analyst with 15+ years of experience in user experience design and usability testing. Your insights are specific, actionable, and grounded in established usability heuristics like Nielsen's 10 Usability Heuristics and Norman's Design Principles.
@@ -14,6 +14,14 @@ module Llm
         - Evaluating accessibility and inclusive design
         - Understanding user psychology and behavior patterns
         - Providing concrete, implementable recommendations
+        - Quantifying impact and prioritizing issues
+        - Applying cognitive psychology principles
+
+        ANALYSIS APPROACH:
+        1. **Frame-by-frame observation**: Analyze each frame for user interactions, visual elements, and potential friction points
+        2. **Heuristic evaluation**: Apply Nielsen's 10 Usability Heuristics systematically
+        3. **Impact assessment**: Consider user frustration, task completion time, and conversion impact
+        4. **Actionable recommendations**: Provide specific, implementable solutions with clear rationale
 
         You avoid generic advice and focus on specific, actionable insights that can be immediately implemented by design and development teams.
       SYSTEM
@@ -28,7 +36,7 @@ module Llm
       SYSTEM
     }.freeze
 
-    # Few-shot examples for better consistency
+    # Enhanced few-shot examples for GPT-5
     FEW_SHOT_EXAMPLES = [
       {
         input: "User clicking through a checkout form",
@@ -55,9 +63,53 @@ module Llm
                 "Add field-specific error messages with clear instructions",
                 "Use visual indicators (borders, icons) to highlight problematic fields",
                 "Provide real-time validation feedback as user types"
-              ]
+              ],
+              heuristicViolated: "Error prevention",
+              impactScore: 8
             }
-          ]
+          ],
+          analysisMetadata: {
+            analysisType: "batch",
+            confidenceScore: 0.92,
+            processingTime: 2.3
+          }
+        }
+      },
+      {
+        input: "User navigating through a mobile app onboarding",
+        output: {
+          workflowSummary: {
+            workflowtitle: "Mobile app onboarding flow",
+            userGoal: "Complete initial app setup and account creation",
+            workflowSteps: [
+              "Welcome screen and permissions",
+              "Account creation form",
+              "Profile setup",
+              "Tutorial walkthrough",
+              "Dashboard introduction"
+            ],
+            totalFramesAnalyzed: "12"
+          },
+          identifiedIssues: [
+            {
+              frameReference: "Frames 3-5",
+              painPointTitle: "Permission requests too aggressive",
+              severity: "Medium",
+              issueDescription: "This violates the principle of User control and freedom. The app requests multiple permissions simultaneously without clear explanation of why each is needed.",
+              recommendations: [
+                "Request permissions one at a time with clear explanations",
+                "Add 'Skip for now' options for non-critical permissions",
+                "Show permission benefits before requesting access"
+              ],
+              heuristicViolated: "User control and freedom",
+              impactScore: 6
+            }
+          ],
+          analysisMetadata: {
+            analysisType: "batch",
+            confidenceScore: 0.88,
+            processingTime: 1.8
+          }
         }
       }
     ].freeze
@@ -160,6 +212,55 @@ module Llm
     def build_batch_user_message(batch_frames, batch_index, total_frames)
       frame_range = "#{batch_index * LlmConfig.batch_size + 1}-#{[total_frames, (batch_index + 1) * LlmConfig.batch_size].min}"
       
+      if LlmConfig.gpt_5?
+        build_gpt5_batch_message(frame_range, total_frames)
+      else
+        build_standard_batch_message(frame_range, total_frames)
+      end
+    end
+
+    def build_gpt5_batch_message(frame_range, total_frames)
+      <<~PROMPT
+        Analyze frames #{frame_range} of #{total_frames} from a user workflow video.
+
+        ### THINKING PROCESS (Chain-of-Thought) ###
+        Let me analyze this step by step:
+
+        1. **Frame Sequence Analysis**: I'll examine each frame chronologically to understand the user's journey
+        2. **Interaction Mapping**: I'll identify all user interactions, clicks, scrolls, and form inputs
+        3. **Visual Element Assessment**: I'll evaluate the visual hierarchy, layout, and information architecture
+        4. **Heuristic Evaluation**: I'll systematically apply Nielsen's 10 Usability Heuristics to each interaction
+        5. **Impact Quantification**: I'll assess the severity and impact of each issue on user experience
+        6. **Solution Generation**: I'll provide specific, actionable recommendations for each issue
+
+        ### CRITICAL INSTRUCTIONS ###
+        1. **Analyze the entire frame sequence** - These frames represent a user's journey over time
+        2. **Identify specific UX issues** - Look for friction points, confusion, or inefficiencies
+        3. **Reference usability principles** - Start each issue description with the specific heuristic being violated
+        4. **Provide actionable recommendations** - Give concrete, implementable suggestions
+        5. **Quantify impact** - Assign impact scores (1-10) based on user frustration and conversion impact
+
+        ### ANALYSIS FOCUS ###
+        - User interaction patterns and micro-interactions
+        - Interface clarity and usability
+        - Information architecture and navigation
+        - Visual hierarchy and cognitive load
+        - Accessibility considerations
+        - Conversion optimization opportunities
+        - Error prevention and recovery
+        - User control and freedom
+
+        ### OUTPUT FORMAT ###
+        Use the provided function to return structured analysis with:
+        - `workflowSummary`: Overall workflow analysis
+        - `identifiedIssues`: Array of specific UX issues with impact scores
+        - `analysisMetadata`: Confidence score and processing information
+
+        #{few_shot_example_text}
+      PROMPT
+    end
+
+    def build_standard_batch_message(frame_range, total_frames)
       <<~PROMPT
         Analyze frames #{frame_range} of #{total_frames} from a user workflow video.
 
