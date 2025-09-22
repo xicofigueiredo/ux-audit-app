@@ -1,0 +1,72 @@
+<% content_for :title, "UX Knowledge Base" %>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">UX Knowledge Base</h1>
+        <div>
+          <%= link_to "Search Knowledge", search_ux_knowledge_documents_path, class: "btn btn-outline-primary me-2" %>
+          <%= link_to "Reindex", reindex_ux_knowledge_documents_path, class: "btn btn-secondary" %>
+        </div>
+      </div>
+
+      <!-- Statistics Cards -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title text-primary"><%= @total_documents %></h5>
+              <p class="card-text">Total Document Chunks</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title text-success"><%= @files_count %></h5>
+              <p class="card-text">Indexed Files</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center">
+            <div class="card-body">
+              <h5 class="card-title text-info"><%= @files_stats.first&.last || 0 %></h5>
+              <p class="card-text">Largest File Chunks</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Files Statistics -->
+      <% if @files_stats.any? %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Indexed Files</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <% @files_stats.each do |file_name, count| %>
+                <div class="col-md-6 mb-2">
+                  <div class="d-flex justify-content-between">
+                    <span class="text-truncate me-2" title="<%= file_name %>">
+                      <%= file_name.gsub('.pdf', '') %>
+                    </span>
+                    <span class="badge bg-primary"><%= count %> chunks</span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% else %>
+        <div class="text-center py-4">
+          <h5>No Documents Indexed</h5>
+          <p class="text-muted">Run the indexing rake task to populate the knowledge base.</p>
+          <code>rails ux_knowledge:index</code>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

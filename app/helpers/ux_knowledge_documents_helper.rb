@@ -1,0 +1,2 @@
+module UxKnowledgeDocumentsHelper
+end

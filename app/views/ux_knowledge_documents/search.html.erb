@@ -1,0 +1,83 @@
+<% content_for :title, "Search UX Knowledge" %>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Search UX Knowledge</h1>
+        <%= link_to "← Back to Knowledge Base", ux_knowledge_documents_path, class: "btn btn-outline-secondary" %>
+      </div>
+
+      <!-- Search Form -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <%= form_with url: search_ux_knowledge_documents_path, method: :get, local: true, class: "d-flex" do |form| %>
+            <%= form.text_field :query,
+                                value: @query,
+                                placeholder: "Search for UX principles, heuristics, or guidelines...",
+                                class: "form-control me-2" %>
+            <%= form.submit "Search", class: "btn btn-primary" %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Search Results -->
+      <% if @query.present? %>
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              Search Results for "<%= @query %>"
+              <span class="badge bg-primary ms-2"><%= @results.count %></span>
+            </h5>
+          </div>
+          <div class="card-body">
+            <% if @results.any? %>
+              <% @results.each_with_index do |result, index| %>
+                <div class="border-bottom pb-3 mb-3 <%= 'border-bottom-0 mb-0 pb-0' if index == @results.count - 1 %>">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="text-primary mb-1">
+                      <%= result.file_name.gsub('.pdf', '').gsub('_', ' ').titleize %>
+                      <small class="text-muted">(Chunk #<%= result.chunk_index %>)</small>
+                    </h6>
+                    <%= link_to "View Full", result, class: "btn btn-sm btn-outline-primary" %>
+                  </div>
+                  <p class="mb-0"><%= simple_format(result.content.truncate(500)) %></p>
+                </div>
+              <% end %>
+
+              <!-- Formatted Context -->
+              <% if @formatted_context.present? %>
+                <div class="mt-4">
+                  <h6 class="text-success">📚 Formatted Knowledge Context</h6>
+                  <div class="bg-light p-3 rounded">
+                    <small class="text-muted">This is how the context would be provided to the AI:</small>
+                    <pre class="mt-2 mb-0"><%= @formatted_context.truncate(1000) %></pre>
+                  </div>
+                </div>
+              <% end %>
+            <% else %>
+              <div class="text-center py-4">
+                <h5>No Results Found</h5>
+                <p class="text-muted">Try searching for terms like "Nielsen heuristics", "accessibility", or "design principles".</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div class="card">
+          <div class="card-body text-center py-5">
+            <h5>Search the UX Knowledge Base</h5>
+            <p class="text-muted">Enter search terms to find relevant UX principles and guidelines.</p>
+            <p><strong>Try searching for:</strong></p>
+            <div class="d-flex justify-content-center flex-wrap gap-2">
+              <%= link_to "Nielsen heuristics", search_ux_knowledge_documents_path(query: "Nielsen heuristics"), class: "btn btn-sm btn-outline-primary" %>
+              <%= link_to "Accessibility", search_ux_knowledge_documents_path(query: "accessibility guidelines"), class: "btn btn-sm btn-outline-primary" %>
+              <%= link_to "Design systems", search_ux_knowledge_documents_path(query: "design systems"), class: "btn btn-sm btn-outline-primary" %>
+              <%= link_to "AI interface", search_ux_knowledge_documents_path(query: "AI interface design"), class: "btn btn-sm btn-outline-primary" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

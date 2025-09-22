@@ -37,6 +37,8 @@ gem 'ruby-openai'
 gem 'dotenv-rails'
 gem 'bootstrap', '~> 5.3.3'
 gem 'sassc-rails'
+gem 'pdf-reader'
+gem 'pgvector'
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"

@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_22_100157) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_22_162032) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "vector"
 
   create_table "llm_partial_responses", force: :cascade do |t|
     t.bigint "video_audit_id", null: false
@@ -23,6 +24,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_22_100157) do
     t.datetime "updated_at", null: false
     t.index ["video_audit_id"], name: "index_llm_partial_responses_on_video_audit_id"
   end
+
+# Could not dump table "ux_knowledge_documents" because of following StandardError
+#   Unknown type 'vector(1536)' for column 'embedding'
 
   create_table "video_audits", force: :cascade do |t|
     t.string "video"

@@ -10,6 +10,12 @@ class LlmAnalysisJob < ApplicationJob
   ### ROLE & GOAL ###
 You are a highly sought-after UX/UI Principal Analyst. Your insights are specific, actionable, and grounded in established usability heuristics. You avoid generic advice. Your primary goal is to perform a complete usability audit of a user workflow, represented by a sequence of image frames. You have already analyzed several batches of frames from a user journey video. Now, combine all findings into a single, unified analysis.
 
+### RELEVANT UX KNOWLEDGE BASE ###
+You have access to a comprehensive knowledge base of UX/UI design principles, including:
+{ux_knowledge_context}
+
+Use this knowledge base to ground your analysis in established principles and cite specific heuristics when identifying issues.
+
 ### CRITICAL INSTRUCTION: ANALYZE THE ENTIRE FRAME SEQUENCE ###
 The image frames are provided in chronological order and represent a user's journey over time. You MUST analyze the entire sequence and distribute your findings across all relevant frames. A good analysis will reference multiple, different frames.
 
@@ -17,7 +23,7 @@ The image frames are provided in chronological order and represent a user's jour
 To ensure a world-class audit, you MUST follow this thinking process:
 1.  **Synthesize the Overall Journey:** Review all frames to understand the user's primary goal (e.g., 'User wants to book a one-way flight from Lisbon to London').
 2.  **Deconstruct into Key Steps:** Group the frames into the distinct stages of the journey (e.g., '1. Flight Search', '2. Date Selection', '3. Results Review', '4. Passenger Details').
-3.  **Analyze Each Step for Friction:** For each step, meticulously examine the frames. For every issue you find, you must first state the usability principle or heuristic being violated (e.g., 'This violates the principle of Recognition rather than recall...') before describing the problem.
+3.  **Analyze Each Step for Friction:** For each step, meticulously examine the frames. For every issue you find, you must first state the specific usability principle or heuristic being violated from the knowledge base (e.g., 'This violates Nielsen's Heuristic #6: Recognition rather than recall...' or 'This conflicts with Shneiderman's Golden Rule of consistency...') before describing the problem.
 
 ### OUTPUT FORMAT: STRICT JSON ###
 - Your entire response MUST be a single, valid JSON object.
@@ -100,6 +106,9 @@ To ensure a world-class audit, you MUST follow this thinking process:
     # Ensure we're in the correct processing stage
     audit.update!(processing_stage: 'analyzing_ai') if audit.processing_stage != 'analyzing_ai'
 
+    # Initialize UX knowledge retrieval service
+    @ux_knowledge_service = UxKnowledgeRetrievalService.new
+
     api_key = ENV['OPENAI_API_KEY']
     if api_key.blank?
       raise "OpenAI API key is not set. Please check your .env file"
@@ -111,8 +120,14 @@ To ensure a world-class audit, you MUST follow this thinking process:
     )
     begin
       frame_paths.each_slice(BATCH_SIZE).with_index do |batch, idx|
+        # Get relevant UX knowledge context for this batch
+        ux_context = get_ux_knowledge_context_for_batch(batch, idx)
+
+        # Prepare prompt with UX knowledge context
+        prompt_with_context = PROMPT_TEMPLATE.gsub('{ux_knowledge_context}', ux_context)
+
         prompt = <<~PROMPT
-          These are frames #{idx * BATCH_SIZE + 1}-#{[frame_paths.size, (idx + 1) * BATCH_SIZE].min} of #{frame_paths.size} from a single user journey. Please analyze and summarize key UX issues, noting that more frames will follow if this is not the last batch.\n\n#{PROMPT_TEMPLATE}
+          These are frames #{idx * BATCH_SIZE + 1}-#{[frame_paths.size, (idx + 1) * BATCH_SIZE].min} of #{frame_paths.size} from a single user journey. Please analyze and summarize key UX issues, noting that more frames will follow if this is not the last batch.\n\n#{prompt_with_context}
         PROMPT
         messages = [
           { role: "user", content: [{ type: "text", text: prompt }] + batch.map { |frame| { type: "image_url", image_url: { url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}", detail: "low" } } } }
@@ -128,12 +143,20 @@ To ensure a world-class audit, you MUST follow this thinking process:
       # Update processing stage to generating report
       audit.update!(processing_stage: 'generating_report')
 
+      # Get comprehensive UX knowledge context for synthesis
+      synthesis_ux_context = get_comprehensive_ux_context(batch_summaries)
+
       # Synthesize holistic analysis
       synthesis_prompt = <<~PROMPT
-        Combine the following batch findings into a single, unified analysis. Output only a single valid JSON object matching the schema below, with no extra text.
+        Combine the following batch findings into a single, unified analysis. Use the UX knowledge base provided to ensure all recommendations are grounded in established principles.
 
-        Batch Findings:
+        ### UX KNOWLEDGE BASE ###
+        #{synthesis_ux_context}
+
+        ### BATCH FINDINGS ###
         #{batch_summaries.join("\n\n")}
+
+        Output only a single valid JSON object matching the schema below, with no extra text:
 
         {
           "workflowSummary": {
@@ -146,6 +169,7 @@ To ensure a world-class audit, you MUST follow this thinking process:
 
         Instructions:
         - Fill in the values for each field based on the batch findings.
+        - Ensure all issues reference specific heuristics from the knowledge base.
         - Do not add any other keys or text.
         - Your response must begin with '{' and end with '}'.
       PROMPT
@@ -206,5 +230,25 @@ To ensure a world-class audit, you MUST follow this thinking process:
       )
       CleanupJob.perform_later(audit.id)
     end
+  end
+
+  private
+
+  def get_ux_knowledge_context_for_batch(batch, batch_index)
+    # For now, get general UX principles for each batch
+    # In the future, this could be more sophisticated by analyzing frame content
+
+    context_categories = ['usability', 'accessibility', 'design_systems']
+    selected_category = context_categories[batch_index % context_categories.length]
+
+    @ux_knowledge_service.search_heuristics_by_category(selected_category)
+  end
+
+  def get_comprehensive_ux_context(batch_summaries)
+    # Analyze batch summaries to understand what UX concepts are relevant
+    combined_summaries = batch_summaries.join(" ")
+
+    # Get relevant context based on the analysis so far
+    @ux_knowledge_service.retrieve_for_ux_analysis(combined_summaries)
   end
 end
