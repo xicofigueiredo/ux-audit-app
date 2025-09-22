@@ -14,17 +14,29 @@
     <header class="bg-white shadow-sm">
       <div class="container mx-auto px-4 py-4 flex justify-between items-center">
         <div class="flex items-center space-x-2">
-          <div class="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center text-white font-bold text-lg">UX</div>
-          <span class="text-2xl font-extrabold text-gray-800 tracking-tight">UXPilot</span>
+          <%= link_to root_path, class: "flex items-center space-x-2" do %>
+            <div class="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center text-white font-bold text-lg">UX</div>
+            <span class="text-2xl font-extrabold text-gray-800 tracking-tight">UXPilot</span>
+          <% end %>
         </div>
-        <nav class="flex-1 flex justify-center">
+        <nav class="flex-1 flex justify-center hidden md:flex">
           <ul class="flex space-x-8 font-medium text-gray-700">
-            <li><a href="#how-it-works" class="hover:text-purple-600">How It Works</a></li>
-            <li><a href="#benefits" class="hover:text-purple-600">Benefits</a></li>
-            <li><a href="#faq" class="hover:text-purple-600">FAQ</a></li>
+            <li><%= link_to "Upload Video", video_audits_path, class: "hover:text-purple-600" %></li>
+            <li><%= link_to "My Projects", projects_path, class: "hover:text-purple-600" %></li>
+            <li><a href="#faq" class="hover:text-purple-600">Help</a></li>
           </ul>
         </nav>
-        <a href="#early-access" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition">Get Early Access</a>
+        <div class="hidden md:block">
+          <%= link_to video_audits_path, class: "bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition" do %>
+            New Audit
+          <% end %>
+        </div>
+        <!-- Mobile menu button -->
+        <button class="md:hidden text-gray-700 hover:text-purple-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
       </div>
     </header>
 

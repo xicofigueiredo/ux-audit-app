@@ -96,6 +96,10 @@ To ensure a world-class audit, you MUST follow this thinking process:
     frame_paths = Array(audit.frames)
     batch_count = (frame_paths.size / BATCH_SIZE.to_f).ceil
     batch_summaries = []
+
+    # Ensure we're in the correct processing stage
+    audit.update!(processing_stage: 'analyzing_ai') if audit.processing_stage != 'analyzing_ai'
+
     api_key = ENV['OPENAI_API_KEY']
     if api_key.blank?
       raise "OpenAI API key is not set. Please check your .env file"
@@ -120,6 +124,10 @@ To ensure a world-class audit, you MUST follow this thinking process:
         LlmPartialResponse.create!(video_audit: audit, chunk_index: idx, result: extracted_summary, status: "completed")
         batch_summaries << extracted_summary
       end
+
+      # Update processing stage to generating report
+      audit.update!(processing_stage: 'generating_report')
+
       # Synthesize holistic analysis
       synthesis_prompt = <<~PROMPT
         Combine the following batch findings into a single, unified analysis. Output only a single valid JSON object matching the schema below, with no extra text.
@@ -174,7 +182,28 @@ To ensure a world-class audit, you MUST follow this thinking process:
     rescue => e
       Rails.logger.error("LLM Analysis Error: #{e.message}")
       Rails.logger.error(e.backtrace.join("\n"))
-      audit.update!(status: 'failed', llm_response: "Error analyzing frames: #{e.message}")
+
+      # Provide more specific error messages based on the error type
+      error_message = case e.message
+      when /OpenAI API key is not set/
+        "Our AI analysis service is temporarily unavailable. Please try again later."
+      when /timeout/i
+        "The analysis is taking longer than expected. Please try again with a shorter video."
+      when /rate limit/i
+        "Too many requests. Please wait a moment and try again."
+      when /invalid JSON/i
+        "There was an error processing the AI response. Please try again."
+      when /missing required keys/i
+        "The AI analysis was incomplete. Please try again."
+      else
+        "We encountered an error while analyzing your video. Please try again or contact support if the problem persists."
+      end
+
+      audit.update!(
+        status: 'failed',
+        llm_response: { error: error_message },
+        processing_stage: 'failed'
+      )
       CleanupJob.perform_later(audit.id)
     end
   end

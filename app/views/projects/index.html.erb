@@ -10,18 +10,22 @@
         <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V4zM14 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V4zM4 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
         Projects
       <% end %>
-      <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+      <%= link_to video_audits_path, class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M17 4v16M7 4l10 8-10 8"></path></svg>
+        Upload Video
+      <% end %>
+      <span class="flex items-center px-4 py-3 text-gray-400 rounded-lg font-medium cursor-not-allowed">
         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0A5.002 5.002 0 0112 16a5.002 5.002 0 014.644 2.143m6.356-2.143A7.002 7.002 0 0012 14a7.002 7 0 00-6.356 2.143M12 16l2.354-2.354M12 16l-2.354-2.354"></path></svg>
-        Team
-      </a>
-      <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+        Team <span class="text-xs ml-2 bg-gray-200 text-gray-500 px-2 py-1 rounded">Soon</span>
+      </span>
+      <span class="flex items-center px-4 py-3 text-gray-400 rounded-lg font-medium cursor-not-allowed">
         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-        Billing
-      </a>
-      <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+        Billing <span class="text-xs ml-2 bg-gray-200 text-gray-500 px-2 py-1 rounded">Soon</span>
+      </span>
+      <%= link_to root_path, class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9.247a4.75 4.75 0 015.273-4.447M11 11.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM11 11.5v-1.5M11 11.5h-1.5M12 11.5l-1.5 1.5m1.5-1.5V16m-1.5-1.5l1.5 1.5m-1.5-1.5h1.5"></path></svg>
-        Help
-      </a>
+        Help & FAQ
+      <% end %>
     </nav>
     <div class="px-4 py-6 border-t border-gray-200">
       <%= link_to "#", class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
@@ -122,7 +126,7 @@
                 <% else %>
                    <span class="inline-block bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full"><%= audit.status %></span>
                 <% end %>
-                 <span class="text-sm text-gray-500">Last run: <%= time_ago_in_words(audit.created_at) %> ago</span>
+                 <span class="text-sm text-gray-500">Created <%= time_ago_in_words(audit.created_at) %> ago</span>
               </div>
               <div class="flex justify-end">
                  <%= link_to "View Report", video_audit_path(audit), class: "text-purple-600 hover:underline text-sm font-semibold" %>
@@ -134,4 +138,105 @@
 
     </main>
   </div>
-</div> 
+</div>
+
+<style>
+/* Mobile responsive styles for projects page */
+@media (max-width: 768px) {
+  .flex.h-screen {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .w-64 {
+    width: 100%;
+    box-shadow: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem 0;
+  }
+
+  .w-64 .flex.items-center {
+    padding: 0 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .w-64 nav {
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .w-64 nav a,
+  .w-64 nav span {
+    white-space: nowrap;
+    min-width: auto;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+  }
+
+  .w-64 .border-t {
+    display: none;
+  }
+
+  .flex-1.flex.flex-col {
+    padding: 0;
+  }
+
+  .flex-1.flex.flex-col header {
+    padding: 1rem;
+  }
+
+  .flex-1.flex.flex-col main {
+    padding: 1rem;
+  }
+
+  .grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-3 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .flex.justify-between.items-center.mb-8 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .flex.justify-between.items-center.mb-8 div:first-child {
+    width: 100%;
+  }
+
+  .flex.justify-between.items-center.mb-8 a {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .w-64 .flex.items-center .text-xl {
+    font-size: 1.25rem;
+  }
+
+  .w-64 nav {
+    gap: 0.25rem;
+  }
+
+  .w-64 nav a,
+  .w-64 nav span {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .flex-1.flex.flex-col header {
+    padding: 0.75rem;
+  }
+
+  .flex-1.flex.flex-col main {
+    padding: 0.75rem;
+  }
+}
+</style> 

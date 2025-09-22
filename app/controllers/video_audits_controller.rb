@@ -16,10 +16,16 @@ class VideoAuditsController < ApplicationController
     end
 
     if @audit.save
+      # Set initial processing stage and kick off processing
+      @audit.update!(processing_stage: 'uploaded')
       VideoProcessingJob.perform_later(@audit.id)
+
+      # Provide success feedback and redirect
+      flash[:notice] = "🎉 Video uploaded successfully! We're analyzing your workflow now."
       redirect_to video_audit_path(@audit)
     else
       @audits = VideoAudit.all
+      flash.now[:alert] = "Please select a valid video file to upload."
       render :index
     end
   end
@@ -29,7 +35,13 @@ class VideoAuditsController < ApplicationController
 
     respond_to do |format|
       format.html
-      format.json { render json: { status: @audit.status, result: @audit.llm_response } }
+      format.json { render json: {
+        status: @audit.status,
+        result: @audit.llm_response,
+        processing_stage: @audit.processing_stage,
+        processing_message: @audit.processing_stage_message,
+        estimated_time: @audit.estimated_time_remaining
+      } }
     end
   end
 

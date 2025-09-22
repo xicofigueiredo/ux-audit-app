@@ -1,29 +1,101 @@
 <%# app/views/video_audits/show.html.erb %>
 
 <% if @audit.status == 'pending' %>
-  <div class="analysis-app-container" style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-    <div style="text-align: center;">
+  <div class="analysis-app-container" style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem;">
+    <div style="text-align: center; max-width: 600px;">
+      <!-- Progress bar -->
+      <div class="progress-container" style="width: 100%; max-width: 400px; margin: 0 auto 2rem;">
+        <div class="progress-bar" style="width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+          <div class="progress-fill" style="height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 4px; transition: width 0.5s ease; width: <%= case @audit.processing_stage
+            when 'uploaded' then '10%'
+            when 'extracting_frames' then '30%'
+            when 'analyzing_ai' then '70%'
+            when 'generating_report' then '90%'
+            else '50%'
+          end %>;"></div>
+        </div>
+        <div class="progress-stages" style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #6b7280;">
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if ['uploaded', 'extracting_frames', 'analyzing_ai', 'generating_report'].include?(@audit.processing_stage) %>">Upload</span>
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if ['extracting_frames', 'analyzing_ai', 'generating_report'].include?(@audit.processing_stage) %>">Extract</span>
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if ['analyzing_ai', 'generating_report'].include?(@audit.processing_stage) %>">Analyze</span>
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if @audit.processing_stage == 'generating_report' %>">Report</span>
+        </div>
+      </div>
+
+      <!-- Animated spinner -->
       <div class="spinner" style="margin-bottom: 24px; width: 48px; height: 48px; border: 6px solid #e5e7eb; border-top: 6px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-      <h2 style="font-size: 1.5rem; color: #6366f1; font-weight: 700; margin-bottom: 12px;">We are analyzing your workflow...</h2>
-      <p style="color: #374151; font-size: 1.1rem;">This may take up to a minute. Please keep this page open.<br/>The report will appear automatically when ready.</p>
+
+      <!-- Dynamic status message -->
+      <h2 id="status-message" style="font-size: 1.5rem; color: #6366f1; font-weight: 700; margin-bottom: 12px;"><%= @audit.processing_stage_message %></h2>
+
+      <!-- Time remaining estimate -->
+      <p id="time-estimate" style="color: #374151; font-size: 1.1rem; margin-bottom: 1rem;"><%= @audit.estimated_time_remaining %></p>
+
+      <!-- Helpful tip -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-top: 1.5rem;">
+        <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
+          💡 <strong>Pro tip:</strong> Keep this page open for the best experience. We'll automatically show your results when ready!
+        </p>
+      </div>
     </div>
   </div>
   <script>
-    // Poll every 5 seconds to check if the audit is complete
-    setInterval(function() {
+    // Poll every 3 seconds to check if the audit is complete and update progress
+    const pollInterval = setInterval(function() {
       fetch(window.location.pathname + '.json')
         .then(response => response.json())
         .then(data => {
           if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            window.location.reload();
+          } else if (data.status === 'failed') {
+            clearInterval(pollInterval);
             window.location.reload();
           }
+
+          // Update progress if we get processing stage info
+          if (data.processing_stage) {
+            updateProgress(data.processing_stage);
+          }
+        })
+        .catch(error => {
+          console.log('Polling error:', error);
+          // Continue polling even if there's an error
         });
-    }, 5000);
+    }, 3000);
+
+    function updateProgress(stage) {
+      const progressFill = document.querySelector('.progress-fill');
+      const statusMessage = document.getElementById('status-message');
+      const timeEstimate = document.getElementById('time-estimate');
+
+      const stages = {
+        'uploaded': { width: '10%', message: 'Video uploaded successfully', time: '1-2 minutes remaining' },
+        'extracting_frames': { width: '30%', message: 'Extracting frames from video...', time: '1-2 minutes remaining' },
+        'analyzing_ai': { width: '70%', message: 'Analyzing workflow with AI...', time: '30-60 seconds remaining' },
+        'generating_report': { width: '90%', message: 'Generating your UX report...', time: 'Almost done!' }
+      };
+
+      if (stages[stage]) {
+        progressFill.style.width = stages[stage].width;
+        statusMessage.textContent = stages[stage].message;
+        timeEstimate.textContent = stages[stage].time;
+      }
+    }
   </script>
   <style>
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    .progress-container {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 <% else %>
@@ -141,12 +213,53 @@
             </div>
           <% end %>
         <% elsif @audit.failed? %>
-          <div class="error-box">
-            <% if @audit.llm_response.is_a?(Hash) && @audit.llm_response["error"] %>
-              <%= @audit.llm_response["error"] %>
-            <% else %>
-              <%= @audit.llm_response %>
-            <% end %>
+          <div class="error-container" style="text-align: center; padding: 3rem 2rem; max-width: 600px; margin: 0 auto;">
+            <!-- Error icon -->
+            <div style="margin-bottom: 1.5rem;">
+              <svg style="width: 64px; height: 64px; color: #ef4444; margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+
+            <!-- Error message -->
+            <h3 style="font-size: 1.5rem; font-weight: 700; color: #dc2626; margin-bottom: 1rem;">
+              Oops! Something went wrong
+            </h3>
+
+            <div class="error-message" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+              <p style="color: #7f1d1d; font-size: 1rem; margin: 0; line-height: 1.5;">
+                <% if @audit.llm_response.is_a?(Hash) && @audit.llm_response["error"] %>
+                  <%= @audit.llm_response["error"] %>
+                <% else %>
+                  <%= @audit.llm_response %>
+                <% end %>
+              </p>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="error-actions" style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+              <%= button_to video_audits_path, method: :post, params: { video_audit: { video: @audit.video } },
+                    class: "retry-button",
+                    style: "background: #6366f1; color: white; border: none; border-radius: 8px; padding: 12px 24px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 8px; text-decoration: none;" do %>
+                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Try Again
+              <% end %>
+
+              <%= link_to video_audits_path,
+                    class: "secondary-button",
+                    style: "color: #6b7280; text-decoration: none; padding: 8px 16px; border-radius: 6px; transition: background 0.2s;" do %>
+                ← Upload a different video
+              <% end %>
+            </div>
+
+            <!-- Help text -->
+            <div style="margin-top: 2rem; padding: 1rem; background: #f8fafc; border-radius: 6px;">
+              <p style="color: #64748b; font-size: 0.9rem; margin: 0;">
+                💡 <strong>Having trouble?</strong> Make sure your video is under 60 seconds and in a supported format (MP4, MOV, AVI).
+              </p>
+            </div>
           </div>
         <% else %>
           <div class="processing">
@@ -416,6 +529,131 @@
   box-sizing: border-box;
 }
 .main-title { display: none; }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .analysis-body {
+    flex-direction: column;
+  }
+
+  .analysis-header {
+    padding: 16px 20px 12px 20px;
+  }
+
+  .workflow-title {
+    font-size: 1.1rem;
+    margin-left: 12px;
+    max-width: 300px;
+  }
+
+  .flow-timeline {
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 20px;
+    position: static;
+  }
+
+  .flow-timeline h4 {
+    margin-left: 0;
+    margin-bottom: 12px;
+  }
+
+  .timeline-steps {
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .timeline-step {
+    padding: 8px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    min-width: 120px;
+    text-align: center;
+    max-width: none;
+  }
+
+  .timeline-step.selected {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+  }
+
+  .step-time {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+    font-size: 0.8rem;
+  }
+
+  .analysis-main {
+    padding: 20px 16px;
+  }
+
+  .main-summary-card {
+    padding: 20px 16px;
+    margin-bottom: 24px;
+  }
+
+  .issue-card-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .issue-card {
+    padding: 20px 16px;
+  }
+
+  .error-container {
+    padding: 2rem 1rem !important;
+  }
+
+  .error-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .retry-button,
+  .secondary-button {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-header {
+    padding: 12px 16px 8px 16px;
+  }
+
+  .workflow-title {
+    font-size: 1rem;
+    margin-left: 8px;
+    max-width: 250px;
+  }
+
+  .timeline-step {
+    min-width: 100px;
+    font-size: 0.85rem;
+  }
+
+  .analysis-main {
+    padding: 16px 12px;
+  }
+
+  .main-summary-card {
+    padding: 16px 12px;
+  }
+
+  .issue-card {
+    padding: 16px 12px;
+  }
+}
 </style>
 
 <script>

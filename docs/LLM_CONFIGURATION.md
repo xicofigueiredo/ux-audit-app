@@ -19,8 +19,6 @@ This document describes how to configure the LLM analysis system for the UX Audi
 ## Supported Models
 
 - `gpt-5o`: Latest GPT-5 model (recommended)
-- `gpt-4o`: GPT-4 Omni model
-- `gpt-4-turbo`: GPT-4 Turbo model
 
 ## Configuration Validation
 
@@ -61,7 +59,7 @@ config = LlmConfig.to_hash
 # OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key_here
 
-# GPT Model Configuration
+# Model Configuration
 GPT_MODEL=gpt-5o
 GPT_TEMPERATURE=0.1
 GPT_MAX_TOKENS=4000
