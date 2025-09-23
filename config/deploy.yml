@@ -1,0 +1,101 @@
+# Name of your application. Used to uniquely configure containers.
+service: uxauditapp
+
+# Name of the container image.
+image: zelusottomayor/uxauditapp
+
+# Deploy to these servers.
+servers:
+  web:
+    hosts:
+      - 143.110.169.251
+    options:
+      memory: "1g"
+      cpus: "0.5"
+  workers:
+    hosts:
+      - 143.110.169.251
+    cmd: bundle exec sidekiq
+    options:
+      memory: "2g"
+      cpus: "1.0"
+
+# Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
+# Remove this section when using multiple web servers and ensure you terminate SSL at your load balancer.
+#
+# Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
+proxy:
+  ssl: true
+  host: uxauditapp.zelusottomayor.com
+  # Proxy connects to your container on port 80 by default.
+  # app_port: 3000
+
+# Credentials for your image host.
+registry:
+  # Specify the registry server, if you're not using Docker Hub
+  # server: registry.digitalocean.com / ghcr.io / ...
+  username: zelusottomayor
+
+  # Always use an access token rather than real password (pulled from .kamal/secrets).
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Configure builder setup.
+builder:
+  arch: amd64
+  # Pass in additional build args needed for your Dockerfile.
+  # args:
+  #   RUBY_VERSION: <%= ENV["RBENV_VERSION"] || ENV["rvm_ruby_string"] || "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}" %>
+
+# Inject ENV variables into containers (secrets come from .kamal/secrets).
+#
+env:
+  clear:
+    RAILS_ENV: production
+    REDIS_URL: redis://uxauditapp-redis:6379/0
+  secret:
+    - RAILS_MASTER_KEY
+    - OPENAI_API_KEY
+    - DATABASE_URL
+
+# Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:
+# "bin/kamal app logs -r job" will tail logs from the first server in the job section.
+#
+# aliases:
+#   shell: app exec --interactive --reuse "bash"
+
+# Use a different ssh user than root
+#
+# ssh:
+#   user: app
+
+# Use a persistent storage volume.
+#
+volumes:
+  - "/mnt/volume-lon1-01/uxauditapp:/app/storage"
+  - "/mnt/volume-lon1-01/uxauditapp-tmp:/app/tmp"
+
+# Bridge fingerprinted assets, like JS and CSS, between versions to avoid
+# hitting 404 on in-flight requests. Combines all files from new and old
+# version inside the asset_path.
+#
+# asset_path: /app/public/assets
+
+# Configure rolling deploys by setting a wait time between batches of restarts.
+#
+# boot:
+#   limit: 10 # Can also specify as a percentage of total hosts, such as "25%"
+#   wait: 2
+
+# Use accessory services (secrets come from .kamal/secrets).
+#
+accessories:
+  redis:
+    image: redis:7
+    host: 143.110.169.251
+    port: 6379
+    directories:
+      - /mnt/volume-lon1-01/uxauditapp-redis:/data
+    options:
+      memory: "512m"
+      cpus: "0.25"

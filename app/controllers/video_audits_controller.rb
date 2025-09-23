@@ -8,8 +8,8 @@ class VideoAuditsController < ApplicationController
     @audit = VideoAudit.new(video_audit_params)
     if params[:video_audit] && params[:video_audit][:video].present?
       movie = FFMPEG::Movie.new(params[:video_audit][:video].path)
-      if movie.duration > 60
-        flash.now[:alert] = "Video is too long (#{movie.duration.round}s). Please upload a video of 1 minute or less."
+      if movie.duration > 90
+        flash.now[:alert] = "Video is too long (#{movie.duration.round}s). Please upload a video of 90 seconds or less."
         @audits = VideoAudit.all
         render :index and return
       end

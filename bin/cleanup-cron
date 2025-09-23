@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# UX Audit App - Automated Cleanup Script
+# Add to crontab: 0 */2 * * * /path/to/uxauditapp/bin/cleanup-cron
+
+# Change to app directory
+cd "$(dirname "$0")/.."
+
+# Set up environment
+export RAILS_ENV=production
+
+# Log cleanup activity
+echo "$(date): Starting automated cleanup" >> log/cleanup.log
+
+# Run cleanup tasks
+bundle exec rails uxauditapp:full_cleanup >> log/cleanup.log 2>&1
+
+# Check if cleanup was successful
+if [ $? -eq 0 ]; then
+  echo "$(date): Cleanup completed successfully" >> log/cleanup.log
+else
+  echo "$(date): Cleanup failed with exit code $?" >> log/cleanup.log
+fi
+
+# Keep cleanup logs under 100MB
+find log/cleanup.log -size +100M -delete 2>/dev/null || true

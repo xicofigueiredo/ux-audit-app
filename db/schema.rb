@@ -31,23 +31,12 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_22_162032) do
   create_table "video_audits", force: :cascade do |t|
     t.string "video"
     t.string "status", default: "pending"
-    t.jsonb "llm_response", default: []
+    t.text "llm_response"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "frames", default: [], array: true
     t.integer "score"
     t.string "processing_stage", default: "uploaded"
-  end
-
-  create_table "video_audits_backup", id: false, force: :cascade do |t|
-    t.bigint "id"
-    t.string "video"
-    t.string "status"
-    t.text "llm_response"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.text "frames", array: true
-    t.integer "score"
   end
 
   add_foreign_key "llm_partial_responses", "video_audits"

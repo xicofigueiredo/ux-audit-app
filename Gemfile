@@ -39,6 +39,9 @@ gem 'bootstrap', '~> 5.3.3'
 gem 'sassc-rails'
 gem 'pdf-reader'
 gem 'pgvector'
+gem 'kamal', require: false
+gem 'sidekiq'
+gem 'redis'
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
