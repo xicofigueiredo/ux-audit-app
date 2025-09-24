@@ -50,4 +50,26 @@ class VideoAudit < ApplicationRecord
       'Processing...'
     end
   end
+
+  # Parse llm_response as JSON or Ruby hash if it's a string
+  def parsed_llm_response
+    return {} if llm_response.blank?
+
+    if llm_response.is_a?(String)
+      # Try parsing as JSON first
+      begin
+        JSON.parse(llm_response)
+      rescue JSON::ParserError
+        # If JSON parsing fails, try evaluating as Ruby hash (unsafe but necessary for legacy data)
+        begin
+          eval(llm_response)
+        rescue => e
+          Rails.logger.error("Failed to parse llm_response: #{e.message}")
+          {}
+        end
+      end
+    else
+      llm_response
+    end
+  end
 end

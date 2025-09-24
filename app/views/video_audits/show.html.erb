@@ -106,7 +106,7 @@
       <a href="/" class="back-link">&larr; Back</a>
       <span class="workflow-title">
         <%
-          llm = @audit.llm_response
+          llm = @audit.parsed_llm_response
           short_title = nil
           user_goal = nil
 
@@ -141,8 +141,8 @@
       <h4>Flow Timeline</h4>
       <ul class="timeline-steps">
         <li class="timeline-step all-steps selected" onclick="highlightCard('all')">All Steps</li>
-        <% if @audit.llm_response["identifiedIssues"].is_a?(Array) %>
-          <% @audit.llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
+        <% if @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
+          <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
             <li class="timeline-step" onclick="highlightCard(<%= idx %>)">
               <span class="step-title"><%= issue["painPointTitle"] %></span>
               <% if issue["frameReference"] %>
@@ -156,14 +156,14 @@
 
     <!-- Main Content Area -->
     <main class="analysis-main">
-      <% if @audit.llm_response.dig('workflowSummary') %>
+      <% if @audit.parsed_llm_response.dig('workflowSummary') %>
         <div class="main-summary-card full-width">
           <h3>User Goal</h3>
-          <p><%= @audit.llm_response['workflowSummary']['userGoal'] %></p>
-          <% if @audit.llm_response['workflowSummary']['workflowSteps'].is_a?(Array) %>
+          <p><%= @audit.parsed_llm_response['workflowSummary']['userGoal'] %></p>
+          <% if @audit.parsed_llm_response['workflowSummary']['workflowSteps'].is_a?(Array) %>
             <h4>Workflow Steps</h4>
             <ol class="workflow-steps-list">
-              <% @audit.llm_response['workflowSummary']['workflowSteps'].each do |step| %>
+              <% @audit.parsed_llm_response['workflowSummary']['workflowSteps'].each do |step| %>
                 <% clean_step = step.gsub(/^\d+\.\s*/, '') %>
                 <li><%= clean_step %></li>
               <% end %>
@@ -173,9 +173,9 @@
       <% end %>
       <div class="tab-content overview-tab active">
         <% if @audit.completed? || @audit.status == 'partial' %>
-          <% if @audit.llm_response.is_a?(Hash) && @audit.llm_response["identifiedIssues"].is_a?(Array) %>
+          <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
             <div class="issue-card-grid">
-              <% @audit.llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
+              <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
                 <div class="issue-card" id="issue-card-<%= idx %>">
                   <% if issue["frameReference"] %>
                     <div class="issue-timestamp">
@@ -228,10 +228,10 @@
 
             <div class="error-message" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
               <p style="color: #7f1d1d; font-size: 1rem; margin: 0; line-height: 1.5;">
-                <% if @audit.llm_response.is_a?(Hash) && @audit.llm_response["error"] %>
-                  <%= @audit.llm_response["error"] %>
+                <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["error"] %>
+                  <%= @audit.parsed_llm_response["error"] %>
                 <% else %>
-                  <%= @audit.llm_response %>
+                  <%= @audit.parsed_llm_response %>
                 <% end %>
               </p>
             </div>
