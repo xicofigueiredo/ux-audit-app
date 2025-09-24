@@ -36,7 +36,7 @@ gem 'streamio-ffmpeg'
 gem 'ruby-openai'
 gem 'dotenv-rails'
 gem 'bootstrap', '~> 5.3.3'
-gem 'sassc-rails'
+gem 'dartsass-rails'
 gem 'pdf-reader'
 gem 'pgvector'
 gem 'kamal', require: false
