@@ -60,8 +60,8 @@ ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
 
-# Add health check
+# Add health check (skip for workers which don't run web server)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:3000/up || exit 1
+  CMD if pgrep -f sidekiq > /dev/null; then exit 0; else curl -f http://localhost:3000/up || exit 1; fi
 
 CMD ["./bin/rails", "server"]
