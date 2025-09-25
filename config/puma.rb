@@ -42,3 +42,17 @@ pidfile ENV.fetch("PIDFILE") { "tmp/pids/server.pid" }
 
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart
+
+# Don't shut down on SSL parsing errors in production (common with SSL termination proxies)
+if rails_env == "production"
+  # Ignore SSL parsing errors - they're normal with kamal-proxy doing SSL termination
+  lowlevel_error_handler do |e, env, status|
+    if e.is_a?(Puma::HttpParserError)
+      # Log the error but don't crash
+      [400, {}, ["Bad Request"]]
+    else
+      # For other errors, use default behavior
+      [status, {}, ["An error occurred"]]
+    end
+  end
+end

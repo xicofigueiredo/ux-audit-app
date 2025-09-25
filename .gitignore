@@ -36,3 +36,5 @@
 .env
 public/uploads/tmp/
 public/uploads/tmp/
+.kamal/secrets
+.kamal/secrets

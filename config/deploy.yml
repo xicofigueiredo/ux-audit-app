@@ -12,6 +12,15 @@ servers:
     options:
       memory: "1g"
       cpus: "0.5"
+    labels:
+      # Router: match your host on both :80 and :443 and enable TLS at the proxy
+      traefik.http.routers.uxauditapp-web.rule: Host(`uxauditapp.zelusottomayor.com`)
+      traefik.http.routers.uxauditapp-web.entrypoints: web,websecure
+      traefik.http.routers.uxauditapp-web.tls: "true"
+
+      # Service: Traefik talks HTTP to Puma on 3000 (no TLS to the app!)
+      traefik.http.services.uxauditapp-web.loadbalancer.server.port: "3000"
+      traefik.http.services.uxauditapp-web.loadbalancer.server.scheme: http
   workers:
     hosts:
       - 143.110.169.251
@@ -25,10 +34,13 @@ servers:
 #
 # Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
 proxy:
-  ssl: true
   host: uxauditapp.zelusottomayor.com
-  # Proxy connects to your container on port 80 by default.
+  ssl: true
   app_port: 3000
+  healthcheck:
+    path: /up
+    interval: 3
+    timeout: 3
 
 # Credentials for your image host.
 registry:
@@ -52,40 +64,22 @@ builder:
 env:
   clear:
     RAILS_ENV: production
-    REDIS_URL: redis://uxauditapp-redis:6379/0
+    REDIS_URL: redis://143.110.169.251:6379/0
   secret:
     - RAILS_MASTER_KEY
     - OPENAI_API_KEY
     - DATABASE_URL
 
-# Aliases are triggered with "bin/kamal <alias>". You can overwrite arguments on invocation:
-# "bin/kamal app logs -r job" will tail logs from the first server in the job section.
-#
-# aliases:
-#   shell: app exec --interactive --reuse "bash"
-
-# Use a different ssh user than root
-#
-# ssh:
-#   user: app
-
 # Use a persistent storage volume.
 #
 volumes:
-  - "/mnt/volume-lon1-01/uxauditapp:/app/storage"
-  - "/mnt/volume-lon1-01/uxauditapp-tmp:/app/tmp"
-
-# Bridge fingerprinted assets, like JS and CSS, between versions to avoid
-# hitting 404 on in-flight requests. Combines all files from new and old
-# version inside the asset_path.
-#
-# asset_path: /app/public/assets
+  - "/mnt/volume-lon1-01/uxauditapp:/rails/storage"
+  - "/mnt/volume-lon1-01/uxauditapp-tmp:/rails/tmp"
 
 # Configure rolling deploys by setting a wait time between batches of restarts.
 #
-# boot:
-#   limit: 10 # Can also specify as a percentage of total hosts, such as "25%"
-#   wait: 2
+boot:
+  limit: 120 # seconds to wait for container to be ready
 
 # Use accessory services (secrets come from .kamal/secrets).
 #

@@ -33,8 +33,8 @@ COPY . .
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 
-# Skip asset precompilation during build - will be done at runtime
-# RUN SECRET_KEY_BASE_DUMMY=1 OPENAI_API_KEY=dummy ./bin/rails assets:precompile
+# Precompile assets during build for production
+RUN SECRET_KEY_BASE_DUMMY=1 OPENAI_API_KEY=dummy ./bin/rails assets:precompile
 
 
 # Final stage for app image
