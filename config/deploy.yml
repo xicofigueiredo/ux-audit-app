@@ -64,7 +64,7 @@ builder:
 env:
   clear:
     RAILS_ENV: production
-    REDIS_URL: redis://143.110.169.251:6379/0
+    REDIS_URL: redis://143.110.169.251:6380/0
   secret:
     - RAILS_MASTER_KEY
     - OPENAI_API_KEY
@@ -87,7 +87,7 @@ accessories:
   redis:
     image: redis:7
     host: 143.110.169.251
-    port: 6379
+    port: 6380
     directories:
       - /mnt/volume-lon1-01/uxauditapp-redis:/data
     options:
