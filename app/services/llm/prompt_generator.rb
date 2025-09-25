@@ -116,7 +116,7 @@ module Llm
 
     def initialize
       super
-      @system_message = SYSTEM_MESSAGES[LlmConfig.model] || SYSTEM_MESSAGES['gpt-4o']
+      @system_message = SYSTEM_MESSAGES[llm_model] || SYSTEM_MESSAGES['gpt-4o']
     end
 
     # Generate prompts for batch analysis
@@ -124,8 +124,8 @@ module Llm
       {
         system_message: @system_message,
         user_message: build_batch_user_message(batch_frames, batch_index, total_frames),
-        temperature: LlmConfig.temperature,
-        max_tokens: LlmConfig.max_tokens
+        temperature: llm_temperature,
+        max_tokens: llm_max_tokens
       }
     end
 
@@ -134,8 +134,8 @@ module Llm
       {
         system_message: @system_message,
         user_message: build_synthesis_user_message(batch_summaries),
-        temperature: LlmConfig.temperature,
-        max_tokens: LlmConfig.max_tokens
+        temperature: llm_temperature,
+        max_tokens: llm_max_tokens
       }
     end
 
@@ -210,9 +210,9 @@ module Llm
     private
 
     def build_batch_user_message(batch_frames, batch_index, total_frames)
-      frame_range = "#{batch_index * LlmConfig.batch_size + 1}-#{[total_frames, (batch_index + 1) * LlmConfig.batch_size].min}"
+      frame_range = "#{batch_index * llm_batch_size + 1}-#{[total_frames, (batch_index + 1) * llm_batch_size].min}"
       
-      if LlmConfig.gpt_5?
+      if llm_gpt_5?
         build_gpt5_batch_message(frame_range, total_frames)
       else
         build_standard_batch_message(frame_range, total_frames)
@@ -309,7 +309,7 @@ module Llm
     end
 
     def few_shot_example_text
-      return "" unless LlmConfig.gpt_5? # Only use examples for GPT-5 for now
+      return "" unless llm_gpt_5? # Only use examples for GPT-5 for now
       
       example = FEW_SHOT_EXAMPLES.first
       <<~EXAMPLE
@@ -321,9 +321,9 @@ module Llm
 
     def log_prompt_generation(context)
       log_info("Generated prompt", 
-        model: LlmConfig.model,
-        temperature: LlmConfig.temperature,
-        max_tokens: LlmConfig.max_tokens,
+        model: llm_model,
+        temperature: llm_temperature,
+        max_tokens: llm_max_tokens,
         **context
       )
     end

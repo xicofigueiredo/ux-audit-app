@@ -1,5 +1,6 @@
-# app/config/llm_config.rb
-class LlmConfig
+# app/models/concerns/llm_config.rb
+module LlmConfig
+  extend ActiveSupport::Concern
   class ConfigurationError < StandardError; end
 
   # Default configuration values
@@ -17,6 +18,41 @@ class LlmConfig
     'gpt-4o' => 'gpt-4o',
     'gpt-4-turbo' => 'gpt-4-turbo-preview'
   }.freeze
+
+  included do
+    def llm_model
+      model_name = ENV.fetch('GPT_MODEL', DEFAULTS[:model])
+      SUPPORTED_MODELS[model_name] || SUPPORTED_MODELS['gpt-4o']
+    end
+
+    def llm_temperature
+      ENV.fetch('GPT_TEMPERATURE', DEFAULTS[:temperature]).to_f
+    end
+
+    def llm_max_tokens
+      ENV.fetch('GPT_MAX_TOKENS', DEFAULTS[:max_tokens]).to_i
+    end
+
+    def llm_batch_size
+      ENV.fetch('GPT_BATCH_SIZE', DEFAULTS[:batch_size]).to_i
+    end
+
+    def llm_timeout
+      ENV.fetch('GPT_TIMEOUT', DEFAULTS[:timeout]).to_i
+    end
+
+    def llm_api_key
+      ENV.fetch('OPENAI_API_KEY') { raise ConfigurationError, 'OPENAI_API_KEY is required' }
+    end
+
+    def llm_gpt_5?
+      llm_model.start_with?('gpt-5')
+    end
+
+    def llm_gpt_4?
+      llm_model.start_with?('gpt-4')
+    end
+  end
 
   class << self
     def model

@@ -208,7 +208,7 @@ module Llm
     # Make API call to OpenAI
     def make_api_call(prompt, frames)
       log_info("Making API call", 
-        model: LlmConfig.model,
+        model: llm_model,
         frame_count: frames.length
       )
       
@@ -224,11 +224,11 @@ module Llm
       ]
       
       parameters = {
-        model: LlmConfig.model,
+        model: llm_model,
         messages: messages,
         max_tokens: prompt[:max_tokens],
         temperature: prompt[:temperature],
-        timeout: LlmConfig.timeout
+        timeout: llm_timeout
       }
       
       # Add function calling for GPT-5
@@ -238,7 +238,7 @@ module Llm
       response = @openai_client.chat(parameters: parameters)
       
       log_info("API call successful", 
-        model: LlmConfig.model,
+        model: llm_model,
         tokens_used: response.dig("usage", "total_tokens")
       )
       
@@ -281,9 +281,9 @@ module Llm
 
     def create_openai_client
       OpenAI::Client.new(
-        access_token: LlmConfig.api_key,
+        access_token: llm_api_key,
         uri_base: "https://api.openai.com/v1",
-        request_timeout: LlmConfig.timeout
+        request_timeout: llm_timeout
       )
     end
 

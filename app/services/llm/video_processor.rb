@@ -5,7 +5,7 @@ module Llm
 
     def initialize
       super
-      @batch_size = LlmConfig.batch_size
+      @batch_size = llm_batch_size
     end
 
     # Process video and extract frames
