@@ -48,7 +48,8 @@ class VideoAuditsController < ApplicationController
   def destroy
     @audit = VideoAudit.find(params[:id])
     @audit.destroy
-    redirect_to video_audits_path
+    flash[:notice] = "Project deleted successfully."
+    redirect_to projects_path
   end
 
   private

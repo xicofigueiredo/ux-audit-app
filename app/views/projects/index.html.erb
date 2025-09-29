@@ -2,8 +2,8 @@
   <!-- Sidebar -->
   <div class="w-64 bg-white shadow-sm flex flex-col py-6">
     <div class="flex items-center px-6 mb-8">
-      <div class="w-9 h-9 rounded-lg bg-purple-500 flex items-center justify-center text-white font-bold text-base mr-3">UX</div>
-      <span class="text-xl font-extrabold text-gray-800 tracking-tight">UXPilot</span>
+      <img src="/logo.svg" alt="UX Audit App" class="w-9 h-9 rounded-lg mr-3">
+      <span class="text-xl font-extrabold text-gray-800 tracking-tight">UX Audit App</span>
     </div>
     <nav class="flex-1 px-4 space-y-2">
       <%= link_to projects_path, class: "flex items-center px-4 py-3 text-purple-600 bg-purple-100 rounded-lg font-semibold", aria: { current: 'page' } do %>
@@ -113,10 +113,26 @@
                     end
                   %>
                 </h3>
-                <!-- Options dropdown would go here -->
-                <button type="button" class="text-gray-400 hover:text-gray-600">
-                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
-                </button>
+                <!-- Options dropdown -->
+                <div class="relative" data-dropdown>
+                  <button type="button" class="text-gray-400 hover:text-gray-600 dropdown-toggle" data-dropdown-toggle="dropdown-<%= audit.id %>">
+                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                  </button>
+                  <div id="dropdown-<%= audit.id %>" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden">
+                    <div class="py-1">
+                      <%= link_to video_audit_path(audit), class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" do %>
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        View Details
+                      <% end %>
+                      <%= link_to video_audit_path(audit), method: :delete,
+                          data: { confirm: "Are you sure you want to delete this project? This action cannot be undone." },
+                          class: "block px-4 py-2 text-sm text-red-600 hover:bg-red-50" do %>
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete Project
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="flex items-center space-x-2 mb-4">
                 <% if audit.status == 'completed' %>
@@ -239,4 +255,43 @@
     padding: 0.75rem;
   }
 }
-</style> 
+</style>
+
+<script>
+// Dropdown functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+
+  dropdownToggles.forEach(toggle => {
+    toggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const dropdownId = this.getAttribute('data-dropdown-toggle');
+      const dropdown = document.getElementById(dropdownId);
+
+      // Close all other dropdowns
+      document.querySelectorAll('[id^="dropdown-"]').forEach(otherDropdown => {
+        if (otherDropdown.id !== dropdownId) {
+          otherDropdown.classList.add('hidden');
+        }
+      });
+
+      // Toggle current dropdown
+      dropdown.classList.toggle('hidden');
+    });
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function() {
+    document.querySelectorAll('[id^="dropdown-"]').forEach(dropdown => {
+      dropdown.classList.add('hidden');
+    });
+  });
+
+  // Prevent dropdown from closing when clicking inside it
+  document.querySelectorAll('[id^="dropdown-"]').forEach(dropdown => {
+    dropdown.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+  });
+});
+</script> 

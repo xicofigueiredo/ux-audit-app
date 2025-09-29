@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  devise_for :users
   # UX Knowledge Base management
   resources :ux_knowledge_documents, only: [:index, :show] do
     collection do
