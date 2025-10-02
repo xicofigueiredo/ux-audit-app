@@ -28,9 +28,6 @@ servers:
     options:
       memory: "2g"
       cpus: "1.0"
-    volumes:
-      - "/mnt/volume-lon1-01/uxauditapp:/rails/storage"
-      - "/mnt/volume-lon1-01/uxauditapp-tmp:/rails/tmp"
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
 # Remove this section when using multiple web servers and ensure you terminate SSL at your load balancer.
@@ -75,7 +72,7 @@ env:
     - OPENAI_API_KEY
     - DATABASE_URL
 
-# Use a persistent storage volume.
+# Use a persistent storage volume for all containers.
 #
 volumes:
   - "/mnt/volume-lon1-01/uxauditapp:/rails/storage"
