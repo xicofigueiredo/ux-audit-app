@@ -75,7 +75,7 @@ env:
 # Use a persistent storage volume for all containers.
 #
 volumes:
-  - "/mnt/volume-lon1-01/uxauditapp:/rails/storage"
+  - "/mnt/volume-lon1-01/uxauditapp:/rails/public/uploads"
   - "/mnt/volume-lon1-01/uxauditapp-tmp:/rails/tmp"
 
 # Configure rolling deploys by setting a wait time between batches of restarts.
