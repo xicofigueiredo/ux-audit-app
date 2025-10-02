@@ -1,5 +1,7 @@
 # app/jobs/video_processing_job.rb
 class VideoProcessingJob < ApplicationJob
+  queue_as :default
+  retry_on StandardError, wait: :exponentially_longer, attempts: 3
   def perform(video_audit_id)
     audit = VideoAudit.find(video_audit_id)
     video_path = audit.video.path

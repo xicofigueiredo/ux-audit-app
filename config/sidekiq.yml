@@ -1,0 +1,29 @@
+# Sidekiq Configuration
+:concurrency: 5
+:timeout: 300
+:max_retries: 3
+:default_worker_options:
+  'retry': 3
+  'backtrace': true
+
+:queues:
+  - critical
+  - default
+  - low
+
+# Production settings
+:production:
+  :concurrency: 10
+  :timeout: 600
+  :max_retries: 5
+
+# Development settings
+:development:
+  :concurrency: 2
+  :timeout: 300
+  :max_retries: 3
+
+# Environment specific Redis configurations
+:redis:
+  :url: <%= ENV.fetch("REDIS_URL", "redis://localhost:6379/0") %>
+  :pool_size: <%= ENV.fetch("REDIS_POOL_SIZE", 10) %>

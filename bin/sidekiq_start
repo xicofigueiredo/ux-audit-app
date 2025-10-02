@@ -1,0 +1,28 @@
+#!/bin/bash
+# Production Sidekiq startup script
+
+set -e
+
+# Load environment variables
+if [ -f .env ]; then
+  export $(cat .env | grep -v '#' | awk '/=/ {print $1}')
+fi
+
+# Default configuration
+SIDEKIQ_WORKERS=${SIDEKIQ_WORKERS:-2}
+SIDEKIQ_CONCURRENCY=${SIDEKIQ_CONCURRENCY:-10}
+SIDEKIQ_TIMEOUT=${SIDEKIQ_TIMEOUT:-600}
+
+echo "Starting Sidekiq with ${SIDEKIQ_WORKERS} workers, concurrency: ${SIDEKIQ_CONCURRENCY}"
+
+# Start Sidekiq workers
+bundle exec sidekiq \
+  -c ${SIDEKIQ_CONCURRENCY} \
+  -t ${SIDEKIQ_TIMEOUT} \
+  -C config/sidekiq.yml \
+  -e ${RAILS_ENV:-production} \
+  -L log/sidekiq.log \
+  -P tmp/pids/sidekiq.pid \
+  -d
+
+echo "Sidekiq started successfully"

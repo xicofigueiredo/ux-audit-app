@@ -4,6 +4,7 @@ require 'json'
 
 class LlmAnalysisJob < ApplicationJob
   queue_as :default
+  retry_on StandardError, wait: :exponentially_longer, attempts: 3
 
   PROMPT_TEMPLATE = <<-PROMPT
 

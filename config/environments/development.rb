@@ -48,6 +48,9 @@ Rails.application.configure do
   config.active_support.deprecation = :log
 
   # Raise exceptions for disallowed deprecations.
+
+  # Use Sidekiq for background jobs (consistent with production)
+  config.active_job.queue_adapter = :sidekiq
   config.active_support.disallowed_deprecation = :raise
 
   # Tell Active Support which deprecation messages to disallow.
