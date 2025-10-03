@@ -11,6 +11,69 @@
 
     <%= stylesheet_link_tag "application" %>
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <% if Rails.env.production? || Rails.env.development? %>
+      <!-- Google tag (gtag.js) -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-JYRMQDB1V4"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        <% if Rails.env.production? %>
+          gtag('config', 'G-JYRMQDB1V4', {
+            'anonymize_ip': true,
+            'allow_google_signals': false,
+            'allow_ad_personalization_signals': false,
+            <% if user_signed_in? %>
+            'user_id': '<%= current_user.id %>',
+            'custom_map': {
+              'custom_dimension_1': 'user_role',
+              'custom_dimension_2': 'session_count',
+              'custom_dimension_3': 'audit_count'
+            }
+            <% end %>
+          });
+        <% else %>
+          gtag('config', 'G-JYRMQDB1V4', {
+            'debug_mode': true,
+            'anonymize_ip': true,
+            'allow_google_signals': false,
+            'allow_ad_personalization_signals': false,
+            <% if user_signed_in? %>
+            'user_id': '<%= current_user.id %>',
+            'custom_map': {
+              'custom_dimension_1': 'user_role',
+              'custom_dimension_2': 'session_count',
+              'custom_dimension_3': 'audit_count'
+            }
+            <% end %>
+          });
+          console.log('Google Analytics loaded in development mode');
+        <% end %>
+
+        // Global error tracking
+        window.addEventListener('error', function(e) {
+          gtag('event', 'javascript_error', {
+            event_category: 'error',
+            error_message: e.message,
+            error_filename: e.filename,
+            error_lineno: e.lineno,
+            error_colno: e.colno,
+            page_url: window.location.href
+          });
+        });
+
+        // Unhandled promise rejection tracking
+        window.addEventListener('unhandledrejection', function(e) {
+          gtag('event', 'unhandled_promise_rejection', {
+            event_category: 'error',
+            error_message: e.reason ? e.reason.toString() : 'Unknown promise rejection',
+            page_url: window.location.href
+          });
+        });
+      </script>
+    <% end %>
   </head>
 
   <body class="bg-[#f6f4ff]">
@@ -81,5 +144,7 @@
         </div>
       </div>
     </footer>
+
+    <%= yield :analytics_events %>
   </body>
 </html>

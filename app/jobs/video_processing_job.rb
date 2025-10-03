@@ -1,14 +1,17 @@
 # app/jobs/video_processing_job.rb
 class VideoProcessingJob < ApplicationJob
+  include AnalyticsHelper
   queue_as :default
   retry_on StandardError, wait: :exponentially_longer, attempts: 3
   def perform(video_audit_id)
     audit = VideoAudit.find(video_audit_id)
     video_path = audit.video.path
+    stage_start_time = Time.current
 
     begin
       # Update status to extracting frames
       audit.update!(processing_stage: 'extracting_frames')
+      track_processing_stage(audit.id, 'extracting_frames')
 
       # Create frames directory if it doesn't exist
       frames_dir = Rails.root.join('tmp', 'frames', audit.id.to_s)
@@ -30,7 +33,13 @@ class VideoProcessingJob < ApplicationJob
       end
 
       Rails.logger.info "Extracted frames: \n#{frame_paths.inspect} (count: #{frame_paths.size})"
+
+      # Track frame extraction completion and transition to AI analysis
+      extraction_duration = (Time.current - stage_start_time).to_i
+      track_processing_stage(audit.id, 'extraction_completed', extraction_duration)
+
       audit.update!(frames: frame_paths, processing_stage: 'analyzing_ai')
+      track_processing_stage(audit.id, 'analyzing_ai')
 
       LlmAnalysisJob.perform_later(audit.id)
     rescue => e
@@ -48,6 +57,9 @@ class VideoProcessingJob < ApplicationJob
       else
         "There was an error processing your video. Please try again or contact support if the problem persists."
       end
+
+      # Track processing failure
+      track_error('video_processing_failed', 'video_processing_job', e.message)
 
       audit.update!(
         status: 'failed',

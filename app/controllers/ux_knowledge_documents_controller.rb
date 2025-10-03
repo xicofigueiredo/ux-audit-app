@@ -1,4 +1,5 @@
 class UxKnowledgeDocumentsController < ApplicationController
+  include AnalyticsHelper
   def index
     @total_documents = UxKnowledgeDocument.count
     @files_count = UxKnowledgeDocument.distinct.count(:file_name)
@@ -11,6 +12,7 @@ class UxKnowledgeDocumentsController < ApplicationController
 
   def show
     @document = UxKnowledgeDocument.find(params[:id])
+    track_knowledge_document_view(@document.id, @document.file_name)
   end
 
   def search
@@ -19,6 +21,7 @@ class UxKnowledgeDocumentsController < ApplicationController
 
     if @query.present?
       @results = UxKnowledgeDocument.search_by_content(@query, limit: 10)
+      track_knowledge_search(@query, @results.length)
       @retrieval_service = UxKnowledgeRetrievalService.new
       @formatted_context = @retrieval_service.retrieve_relevant_context(@query)
     end

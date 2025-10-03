@@ -1,29 +1,66 @@
 # app/controllers/video_audits_controller.rb
 class VideoAuditsController < ApplicationController
+  include AnalyticsHelper
   def index
     @audits = VideoAudit.all
   end
 
   def create
     @audit = VideoAudit.new(video_audit_params)
+
+    # Track upload start
     if params[:video_audit] && params[:video_audit][:video].present?
-      movie = FFMPEG::Movie.new(params[:video_audit][:video].path)
-      if movie.duration > 90
-        flash.now[:alert] = "Video is too long (#{movie.duration.round}s). Please upload a video of 90 seconds or less."
+      video_file = params[:video_audit][:video]
+      file_size = video_file.size if video_file.respond_to?(:size)
+
+      begin
+        movie = FFMPEG::Movie.new(video_file.path)
+        duration = movie.duration
+
+        track_video_upload_start(file_size, duration)
+
+        if duration > 90
+          track_video_upload_error('duration_exceeded', "Video duration #{duration.round}s exceeds 90s limit")
+          flash.now[:alert] = "Video is too long (#{duration.round}s). Please upload a video of 90 seconds or less."
+          @audits = VideoAudit.all
+          render :index and return
+        end
+      rescue => e
+        track_video_upload_error('ffmpeg_error', e.message)
+        flash.now[:alert] = "Error processing video file. Please try a different format."
         @audits = VideoAudit.all
         render :index and return
       end
+    else
+      track_video_upload_error('no_file', 'No video file provided')
     end
 
     if @audit.save
+      # Track successful upload
+      video_file = params[:video_audit][:video]
+      file_size = video_file.size if video_file.respond_to?(:size)
+      duration = nil
+
+      begin
+        movie = FFMPEG::Movie.new(video_file.path)
+        duration = movie.duration
+      rescue
+        # Duration already captured above or unavailable
+      end
+
+      track_video_upload_success(@audit.id, file_size, duration)
+
       # Set initial processing stage and kick off processing
       @audit.update!(processing_stage: 'uploaded')
+      track_processing_stage(@audit.id, 'uploaded')
+
       VideoProcessingJob.perform_later(@audit.id)
 
       # Provide success feedback and redirect
       flash[:notice] = "🎉 Video uploaded successfully! We're analyzing your workflow now."
       redirect_to video_audit_path(@audit)
     else
+      track_video_upload_error('validation_failed', @audit.errors.full_messages.join(', '))
       @audits = VideoAudit.all
       flash.now[:alert] = "Please select a valid video file to upload."
       render :index
@@ -32,6 +69,18 @@ class VideoAuditsController < ApplicationController
 
   def show
     @audit = VideoAudit.find(params[:id])
+
+    # Track audit completion when user first views completed results
+    if @audit.completed? && !session["audit_#{@audit.id}_completion_tracked"]
+      begin
+        issues_count = @audit.parsed_llm_response.dig('identifiedIssues')&.length if @audit.parsed_llm_response.is_a?(Hash)
+        total_duration = (Time.current - @audit.created_at).to_i
+        track_audit_completion(@audit.id, total_duration, issues_count)
+        session["audit_#{@audit.id}_completion_tracked"] = true
+      rescue => e
+        Rails.logger.error "Error tracking audit completion: #{e.message}"
+      end
+    end
 
     respond_to do |format|
       format.html

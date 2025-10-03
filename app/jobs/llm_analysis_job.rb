@@ -3,6 +3,7 @@ require 'csv'
 require 'json'
 
 class LlmAnalysisJob < ApplicationJob
+  include AnalyticsHelper
   queue_as :default
   retry_on StandardError, wait: :exponentially_longer, attempts: 3
 
@@ -143,6 +144,7 @@ To ensure a world-class audit, you MUST follow this thinking process:
 
       # Update processing stage to generating report
       audit.update!(processing_stage: 'generating_report')
+      track_processing_stage(audit.id, 'generating_report')
 
       # Get comprehensive UX knowledge context for synthesis
       synthesis_ux_context = get_comprehensive_ux_context(batch_summaries)
@@ -223,6 +225,9 @@ To ensure a world-class audit, you MUST follow this thinking process:
       else
         "We encountered an error while analyzing your video. Please try again or contact support if the problem persists."
       end
+
+      # Track LLM analysis failure
+      track_error('llm_analysis_failed', 'llm_analysis_job', e.message)
 
       audit.update!(
         status: 'failed',

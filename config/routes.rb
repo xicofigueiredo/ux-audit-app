@@ -1,5 +1,8 @@
 Rails.application.routes.draw do
-  devise_for :users
+  devise_for :users, controllers: {
+    sessions: 'users/sessions',
+    registrations: 'users/registrations'
+  }
   # UX Knowledge Base management
   resources :ux_knowledge_documents, only: [:index, :show] do
     collection do

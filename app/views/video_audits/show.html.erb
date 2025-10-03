@@ -202,7 +202,7 @@
                   </div>
                   <div class="issue-card-actions">
                     <button class="copy-btn" onclick="copyIssue(<%= @audit.id %>, <%= idx %>)">Copy</button>
-                    <button class="jira-btn">Jira</button>
+                    <button class="jira-btn" onclick="trackJiraIntegration(<%= @audit.id %>, <%= idx %>)">Jira</button>
                   </div>
                 </div>
               <% end %>
@@ -680,6 +680,29 @@ function copyIssue(auditId, idx) {
     text += '- ' + li.innerText + '\n';
   });
   navigator.clipboard.writeText(text);
+
+  // Track copy event
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'issue_copy', {
+      event_category: 'engagement',
+      audit_id: auditId,
+      issue_index: idx
+    });
+  }
+}
+
+function trackJiraIntegration(auditId, idx) {
+  // Track JIRA integration usage
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'jira_integration', {
+      event_category: 'engagement',
+      audit_id: auditId,
+      issue_index: idx
+    });
+  }
+
+  // Add future JIRA integration logic here
+  alert('JIRA integration coming soon!');
 }
 
 // Highlight feedback card when timeline step is clicked
@@ -697,6 +720,15 @@ function highlightCard(idx) {
       card.style.display = 'none';
     }
   });
+
+  // Track timeline navigation
+  if (typeof gtag !== 'undefined' && idx !== 'all' && idx !== undefined) {
+    gtag('event', 'timeline_navigation', {
+      event_category: 'engagement',
+      audit_id: <%= @audit.id %>,
+      issue_index: idx
+    });
+  }
 }
 </script>
 <% end %>
