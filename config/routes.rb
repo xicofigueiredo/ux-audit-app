@@ -24,6 +24,7 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   resources :video_audits, only: [:create, :show, :index, :destroy]
   resources :projects, only: [:index]
+  get "demo" => "pages#demo"
   root "pages#home"
 
   # Sidekiq web interface (protect in production)

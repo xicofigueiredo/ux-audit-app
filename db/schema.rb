@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_27_201456) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_04_160834) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "vector"
@@ -49,7 +49,16 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_27_201456) do
     t.text "frames", default: [], array: true
     t.integer "score"
     t.string "processing_stage", default: "uploaded"
+    t.integer "issue_id_counter", default: 0
+    t.string "jira_epic_key"
+    t.string "share_token"
+    t.datetime "shared_at"
+    t.bigint "user_id", null: false
+    t.index ["jira_epic_key"], name: "index_video_audits_on_jira_epic_key"
+    t.index ["share_token"], name: "index_video_audits_on_share_token", unique: true
+    t.index ["user_id"], name: "index_video_audits_on_user_id"
   end
 
   add_foreign_key "llm_partial_responses", "video_audits"
+  add_foreign_key "video_audits", "users"
 end

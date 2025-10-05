@@ -7,12 +7,10 @@
       <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-2">Get Instant UX Feedback From Your App</h1>
       <h2 class="text-4xl md:text-5xl font-extrabold text-purple-600 leading-tight mb-4">Just Upload a Workflow Video</h2>
       <p class="text-lg text-gray-700 mb-8 max-w-xl">Let AI analyze your product and highlight friction points, design tweaks, and conversion boosters in minutes – no setup, no code, no guesswork.</p>
-      <form class="flex flex-col md:flex-row items-center gap-3 mb-3 max-w-xl">
-        <input type="email" placeholder="Enter your email" class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-300 focus:outline-none text-base" required>
-        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition">Join Early Access</button>
-        <a href="<%= projects_path %>" class="bg-white border border-gray-300 text-gray-900 font-semibold px-6 py-3 rounded-lg transition hover:bg-gray-100">Test a Demo</a>
-      </form>
-      <p class="text-sm text-gray-500">Join 100+ product teams already on the waitlist. No spam, just a heads-up when we launch.</p>
+      <div class="flex flex-col md:flex-row items-center gap-3 mb-3 max-w-xl">
+        <a href="<%= new_user_registration_path %>" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition">Become a Beta User</a>
+        <a href="<%= demo_path %>" class="bg-white border border-gray-300 text-gray-900 font-semibold px-6 py-3 rounded-lg transition hover:bg-gray-100">Test a Demo</a>
+      </div>
     </div>
     <!-- Right: Illustration Placeholder -->
     <div class="md:w-1/2 flex justify-center mt-10 md:mt-0">
@@ -241,7 +239,7 @@
     <p class="text-lg text-white text-center mb-8 max-w-2xl">Join the waitlist to get early access to UX Audit App and start receiving AI-powered UX insights that will help you build better products.</p>
     <form class="w-full flex flex-col md:flex-row items-center justify-center gap-4 mb-4 max-w-xl">
       <input type="email" placeholder="Enter your email" class="flex-1 px-6 py-4 rounded-lg bg-white bg-opacity-20 text-white placeholder-white border border-white border-opacity-30 focus:ring-2 focus:ring-white focus:outline-none text-base" required>
-      <button type="submit" class="bg-white text-gray-900 font-semibold px-8 py-4 rounded-lg transition hover:bg-gray-100 text-base">Join the Waitlist</button>
+      <button type="submit" class="bg-white text-gray-900 font-semibold px-8 py-4 rounded-lg transition hover:bg-gray-100 text-base">Become a Beta User</button>
     </form>
     <p class="text-sm text-white text-opacity-80 text-center">Built with privacy in mind – your videos are analyzed securely and never shared.</p>
   </div>

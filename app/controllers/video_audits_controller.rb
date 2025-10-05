@@ -2,11 +2,11 @@
 class VideoAuditsController < ApplicationController
   include AnalyticsHelper
   def index
-    @audits = VideoAudit.all
+    @audits = current_user.video_audits.order(created_at: :desc)
   end
 
   def create
-    @audit = VideoAudit.new(video_audit_params)
+    @audit = current_user.video_audits.build(video_audit_params)
 
     # Track upload start
     if params[:video_audit] && params[:video_audit][:video].present?
@@ -22,13 +22,13 @@ class VideoAuditsController < ApplicationController
         if duration > 90
           track_video_upload_error('duration_exceeded', "Video duration #{duration.round}s exceeds 90s limit")
           flash.now[:alert] = "Video is too long (#{duration.round}s). Please upload a video of 90 seconds or less."
-          @audits = VideoAudit.all
+          @audits = current_user.video_audits.order(created_at: :desc)
           render :index and return
         end
       rescue => e
         track_video_upload_error('ffmpeg_error', e.message)
         flash.now[:alert] = "Error processing video file. Please try a different format."
-        @audits = VideoAudit.all
+        @audits = current_user.video_audits.order(created_at: :desc)
         render :index and return
       end
     else
@@ -68,7 +68,7 @@ class VideoAuditsController < ApplicationController
   end
 
   def show
-    @audit = VideoAudit.find(params[:id])
+    @audit = current_user.video_audits.find(params[:id])
 
     # Track audit completion when user first views completed results
     if @audit.completed? && !session["audit_#{@audit.id}_completion_tracked"]
@@ -95,7 +95,7 @@ class VideoAuditsController < ApplicationController
   end
 
   def destroy
-    @audit = VideoAudit.find(params[:id])
+    @audit = current_user.video_audits.find(params[:id])
     @audit.destroy
     flash[:notice] = "Project deleted successfully."
     redirect_to projects_path

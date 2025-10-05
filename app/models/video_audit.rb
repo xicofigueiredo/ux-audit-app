@@ -1,4 +1,5 @@
 class VideoAudit < ApplicationRecord
+  belongs_to :user
   mount_uploader :video, VideoAuditUploader
   validates :video, presence: true
   has_many :llm_partial_responses, dependent: :destroy
