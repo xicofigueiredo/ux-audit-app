@@ -5,8 +5,8 @@
     <div class="md:w-1/2 text-left">
       <span class="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full mb-4">Coming Soon</span>
       <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-2">Get Instant UX Feedback From Your App</h1>
-      <h2 class="text-4xl md:text-5xl font-extrabold text-purple-600 leading-tight mb-4">Just Upload a Workflow Video</h2>
-      <p class="text-lg text-gray-700 mb-8 max-w-xl">Let AI analyze your product and highlight friction points, design tweaks, and conversion boosters in minutes – no setup, no code, no guesswork.</p>
+      <h2 class="text-4xl md:text-5xl font-extrabold text-purple-600 leading-tight mb-4">Just Record Your Screen</h2>
+      <p class="text-lg text-gray-700 mb-8 max-w-xl">Record your workflow directly in your browser and get AI-powered UX insights in minutes – no downloads, no setup, no guesswork.</p>
       <div class="flex flex-col md:flex-row items-center gap-3 mb-3 max-w-xl">
         <a href="<%= new_user_registration_path %>" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg transition">Become a Beta User</a>
         <a href="<%= demo_path %>" class="bg-white border border-gray-300 text-gray-900 font-semibold px-6 py-3 rounded-lg transition hover:bg-gray-100">View Example Audit</a>
@@ -60,11 +60,11 @@
       <!-- Step 1 -->
       <div class="bg-white rounded-2xl shadow-lg p-10 flex flex-col items-center text-center">
         <div class="w-16 h-16 flex items-center justify-center rounded-full bg-purple-100 mb-6">
-          <!-- Upload Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" /></svg>
+          <!-- Record Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">Upload Your Recording</h3>
-        <p class="text-gray-500 mb-6">Simply upload your screen recording (Loom, GIF, or MP4) of your product workflow or user journey.</p>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Record Your Screen</h3>
+        <p class="text-gray-500 mb-6">Click record, select your window, and demonstrate your product workflow – all in your browser, up to 90 seconds.</p>
         <div class="w-full border-t border-purple-100 mb-2"></div>
         <span class="text-xs text-gray-400 tracking-widest font-semibold">STEP 1</span>
       </div>
@@ -161,11 +161,11 @@
       <!-- FAQ Item 1 -->
       <div class="bg-white rounded-xl shadow p-6">
         <button type="button" class="w-full flex justify-between items-center text-left faq-toggle font-semibold text-gray-900 text-lg">
-          What kind of videos can I upload?
+          How does the in-browser recording work?
           <svg class="w-6 h-6 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
         </button>
         <div class="faq-answer mt-4 text-gray-600 text-base hidden">
-          You can upload any screen recording, product walkthrough, or user journey video in MP4, GIF, or Loom format. The video should showcase the flow or feature you want to analyze.
+          Click "Record Screen" and your browser will ask you to select which window or tab to record. After a 3-second countdown, you can demonstrate your product workflow for up to 90 seconds. No downloads or extensions required – it all works directly in your browser. You can also upload pre-recorded videos in MP4, MOV, AVI, or WebM format.
         </div>
       </div>
       <!-- FAQ Item 2 -->
@@ -235,13 +235,13 @@
 <!-- Early Access / Waitlist CTA Section -->
 <section id="early-access" class="py-24 flex justify-center items-center bg-[#f6f4ff]">
   <div class="w-full max-w-4xl mx-auto rounded-3xl p-12 md:p-16 bg-gradient-to-br from-purple-500 to-purple-400 shadow-xl flex flex-col items-center">
-    <h2 class="text-3xl md:text-4xl font-extrabold text-white text-center mb-4">Want to improve your UX before your next release?</h2>
-    <p class="text-lg text-white text-center mb-8 max-w-2xl">Join the waitlist to get early access to UX Audit App and start receiving AI-powered UX insights that will help you build better products.</p>
+    <h2 class="text-3xl md:text-4xl font-extrabold text-white text-center mb-4">Ready to catch UX issues before launch?</h2>
+    <p class="text-lg text-white text-center mb-8 max-w-2xl">Record your screen, get instant AI-powered feedback on your product's UX, and ship with confidence.</p>
     <form class="w-full flex flex-col md:flex-row items-center justify-center gap-4 mb-4 max-w-xl">
       <input type="email" placeholder="Enter your email" class="flex-1 px-6 py-4 rounded-lg bg-white bg-opacity-20 text-white placeholder-white border border-white border-opacity-30 focus:ring-2 focus:ring-white focus:outline-none text-base" required>
       <button type="submit" class="bg-white text-gray-900 font-semibold px-8 py-4 rounded-lg transition hover:bg-gray-100 text-base">Become a Beta User</button>
     </form>
-    <p class="text-sm text-white text-opacity-80 text-center">Built with privacy in mind – your videos are analyzed securely and never shared.</p>
+    <p class="text-sm text-white text-opacity-80 text-center">Built with privacy in mind – record in-browser or upload securely. Your videos are never shared.</p>
   </div>
 </section>
 
@@ -254,7 +254,7 @@
         <img src="/logo.svg" alt="UX Audit App" class="w-10 h-10 rounded-xl mr-2">
         <span class="text-2xl font-extrabold text-gray-800 tracking-tight">UX Audit App</span>
       </div>
-      <p class="text-gray-500 max-w-xs">UX Audit App helps product teams identify UX improvements through AI-powered video analysis, making it easy to build better user experiences without expensive consultants or complex setups.</p>
+      <p class="text-gray-500 max-w-xs">UX Audit App helps product teams identify UX improvements through AI-powered screen recording analysis. Record your workflow directly in your browser and get instant feedback – no expensive consultants or complex setups.</p>
     </div>
     <!-- Product Links -->
     <div class="flex-1 mb-8 md:mb-0">
