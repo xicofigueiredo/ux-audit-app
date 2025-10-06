@@ -35,7 +35,7 @@
       <svg style="width: 16px; height: 16px; color: #059669;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
       </svg>
-      <span style="color: #0c4a6e; font-size: 0.9rem;">MP4, MOV, AVI</span>
+      <span style="color: #0c4a6e; font-size: 0.9rem;">MP4, MOV, AVI, WebM</span>
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
       <svg style="width: 16px; height: 16px; color: #059669;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -46,51 +46,224 @@
   </div>
 </div>
 
-<div class="upload-section" id="drop-zone">
-  <%= form_with(model: VideoAudit.new, local: true, multipart: true, id: 'video-upload-form') do |f| %>
-    <div class="field">
-      <div class="drop-zone-content">
-        <div class="upload-icon" style="margin-bottom: 1rem;">
-          <svg style="width: 48px; height: 48px; color: #6b7280; margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-          </svg>
-        </div>
-        <div class="upload-text" style="text-align: center; margin-bottom: 1rem;">
-          <p style="font-size: 1.1rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
-            <span class="drag-text">Drag and drop your video here</span>
-            <span class="upload-text-mobile" style="display: none;">Tap to select your video</span>
-          </p>
-          <p style="color: #6b7280; font-size: 0.9rem;">or click to browse files</p>
-        </div>
-        <%= f.file_field :video, accept: 'video/mp4,video/mov,video/avi,video/*', class: 'file-input', id: 'video-file-input' %>
-        <div class="file-preview" id="file-preview" style="display: none; margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 6px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <svg style="width: 24px; height: 24px; color: #6366f1;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16l13-8L7 4z"></path>
+<!-- Upload Method Tabs -->
+<div class="upload-method-tabs" style="display: flex; border-bottom: 1px solid #e5e7eb; margin-bottom: 2rem;">
+  <button type="button" class="tab-button active" data-tab="upload" style="flex: 1; padding: 12px 24px; border: none; background: #fff; border-bottom: 2px solid #6366f1; color: #6366f1; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+    📁 Upload Video
+  </button>
+  <button type="button" class="tab-button" data-tab="record" id="record-tab" style="flex: 1; padding: 12px 24px; border: none; background: #f9fafb; border-bottom: 2px solid transparent; color: #6b7280; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+    🎥 Record Screen
+  </button>
+</div>
+
+<!-- Upload Tab Content -->
+<div class="tab-content active" id="upload-tab-content">
+  <div class="upload-section" id="drop-zone">
+    <%= form_with(model: VideoAudit.new, local: true, multipart: true, id: 'video-upload-form') do |f| %>
+      <div class="field">
+        <div class="drop-zone-content">
+          <div class="upload-icon" style="margin-bottom: 1rem;">
+            <svg style="width: 48px; height: 48px; color: #6b7280; margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
-            <div style="flex: 1;">
-              <p id="file-name" style="font-weight: 600; color: #374151; margin: 0 0 4px 0;"></p>
-              <p id="file-size" style="color: #6b7280; font-size: 0.9rem; margin: 0;"></p>
-            </div>
-            <button type="button" id="remove-file" style="color: #ef4444; background: none; border: none; cursor: pointer;">
-              <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </div>
+          <div class="upload-text" style="text-align: center; margin-bottom: 1rem;">
+            <p style="font-size: 1.1rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;">
+              <span class="drag-text">Drag and drop your video here</span>
+              <span class="upload-text-mobile" style="display: none;">Tap to select your video</span>
+            </p>
+            <p style="color: #6b7280; font-size: 0.9rem;">or click to browse files</p>
+          </div>
+          <%= f.file_field :video, accept: 'video/mp4,video/mov,video/avi,video/webm,video/*', class: 'file-input', id: 'video-file-input' %>
+          <div class="file-preview" id="file-preview" style="display: none; margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <svg style="width: 24px; height: 24px; color: #6366f1;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16l13-8L7 4z"></path>
               </svg>
+              <div style="flex: 1;">
+                <p id="file-name" style="font-weight: 600; color: #374151; margin: 0 0 4px 0;"></p>
+                <p id="file-size" style="color: #6b7280; font-size: 0.9rem; margin: 0;"></p>
+              </div>
+              <button type="button" id="remove-file" style="color: #ef4444; background: none; border: none; cursor: pointer;">
+                <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="button-center">
+        <%= f.submit "Analyze Video", class: 'upload-button', id: 'submit-button', disabled: true %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Record Tab Content -->
+<div class="tab-content" id="record-tab-content" style="display: none;">
+  <div class="recording-section">
+    <!-- Browser Support Check -->
+    <div id="browser-support-warning" class="browser-warning" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg style="width: 20px; height: 20px; color: #dc2626;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        <span style="color: #7f1d1d; font-weight: 500;">Screen recording is not supported in your browser. Please use the Upload tab to upload a pre-recorded video.</span>
+      </div>
+    </div>
+
+    <!-- Recording Interface -->
+    <div id="recording-interface" class="recording-interface">
+      <!-- Initial State -->
+      <div id="recording-start" class="recording-state">
+        <div style="text-align: center; padding: 2rem;">
+          <div class="record-icon" style="margin-bottom: 1.5rem;">
+            <svg style="width: 64px; height: 64px; color: #ef4444; margin: 0 auto;" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="8"/>
+            </svg>
+          </div>
+          <h3 style="color: #374151; font-weight: 600; margin-bottom: 1rem;">Ready to Record Your Screen</h3>
+          <p style="color: #6b7280; margin-bottom: 2rem; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+            Click "Start Recording" to choose your window, then you'll have 3 seconds to prepare before recording begins. Record up to 90 seconds of your user flow.
+          </p>
+          <button type="button" id="start-recording-btn" class="record-button" style="padding: 14px 28px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
+            <svg style="width: 20px; height: 20px;" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="8"/>
+            </svg>
+            Start Recording
+          </button>
+        </div>
+      </div>
+
+      <!-- Window Selection State -->
+      <div id="recording-window-selection" class="recording-state" style="display: none;">
+        <div style="text-align: center; padding: 2rem;">
+          <div class="window-selection-icon" style="margin-bottom: 1.5rem;">
+            <svg style="width: 64px; height: 64px; color: #6366f1; margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h3 style="color: #374151; font-weight: 600; margin-bottom: 1rem;">Select Window to Record</h3>
+          <p style="color: #6b7280; margin-bottom: 1rem; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+            Your browser will ask you to choose which window or screen to record. Select the window you want to demonstrate.
+          </p>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 1rem; margin: 1rem auto; max-width: 400px;">
+            <p style="color: #1e40af; font-size: 0.9rem; margin: 0;">
+              💡 <strong>Tip:</strong> After selecting, you'll have 3 seconds to switch to your target page before recording starts.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Countdown State -->
+      <div id="recording-countdown" class="recording-state" style="display: none;">
+        <div style="text-align: center; padding: 3rem;">
+          <div id="countdown-number" style="font-size: 4rem; font-weight: 700; color: #ef4444; margin-bottom: 1rem;">3</div>
+          <p style="color: #6b7280; font-size: 1.1rem;">Get ready to record your screen...</p>
+        </div>
+      </div>
+
+      <!-- Recording State -->
+      <div id="recording-active" class="recording-state" style="display: none;">
+        <div style="text-align: center; padding: 2rem; background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 1.5rem;">
+            <div class="recording-indicator" style="width: 12px; height: 12px; background: #ef4444; border-radius: 50%; animation: pulse 1s infinite;"></div>
+            <span style="color: #ef4444; font-weight: 600; font-size: 1.1rem;">RECORDING</span>
+          </div>
+          <div id="recording-timer" style="font-size: 2rem; font-weight: 700; color: #374151; margin-bottom: 1.5rem;">00:00</div>
+          <p style="color: #6b7280; margin-bottom: 1rem;">Recording your screen... A floating stop button will appear outside your recording area.</p>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 1rem; margin: 1rem auto 2rem; max-width: 400px;">
+            <p style="color: #1e40af; font-size: 0.9rem; margin: 0;">
+              ⌨️ <strong>Quick Stop:</strong> Press <kbd style="background: #1e40af; color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+Shift+S</kbd> (Windows/Linux) or <kbd style="background: #1e40af; color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace;">Cmd+Shift+S</kbd> (Mac) to stop recording
+            </p>
+          </div>
+          <button type="button" id="stop-recording-btn" style="padding: 12px 24px; background: #374151; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+            Stop Recording
+          </button>
+        </div>
+      </div>
+
+      <!-- Processing State -->
+      <div id="recording-processing" class="recording-state" style="display: none;">
+        <div style="text-align: center; padding: 2rem;">
+          <div class="spinner" style="margin: 0 auto 1.5rem; width: 32px; height: 32px; border: 4px solid #e5e7eb; border-top: 4px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <p style="color: #6b7280;">Processing your recording...</p>
+        </div>
+      </div>
+
+      <!-- Preview State -->
+      <div id="recording-preview" class="recording-state" style="display: none;">
+        <div style="text-align: center; padding: 1.5rem;">
+          <h4 style="color: #374151; font-weight: 600; margin-bottom: 1rem;">Preview Your Recording</h4>
+          <video id="recorded-video" controls style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></video>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" id="submit-recording-btn" class="upload-button" style="padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+              Analyze Recording
+            </button>
+            <button type="button" id="restart-recording-btn" style="padding: 12px 24px; background: #6b7280; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+              Record Again
             </button>
           </div>
         </div>
       </div>
     </div>
-    <div class="button-center">
-      <%= f.submit "Analyze Video", class: 'upload-button', id: 'submit-button', disabled: true %>
-    </div>
-  <% end %>
+  </div>
+</div>
+
+<!-- Floating Stop Recording Button (shown during recording) -->
+<div id="floating-stop-button" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 10000; background: #ef4444; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.2s; user-select: none;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <div style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse 1s infinite;"></div>
+    <span>Stop Recording</span>
+  </div>
 </div>
 
 <div id="analysis-results"></div>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
 document.addEventListener('DOMContentLoaded', function() {
+  // Tab switching functionality
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const targetTab = button.getAttribute('data-tab');
+
+      // Update tab buttons
+      tabButtons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = '#f9fafb';
+        btn.style.borderBottom = '2px solid transparent';
+        btn.style.color = '#6b7280';
+      });
+
+      button.classList.add('active');
+      button.style.background = '#fff';
+      button.style.borderBottom = '2px solid #6366f1';
+      button.style.color = '#6366f1';
+
+      // Update tab contents
+      tabContents.forEach(content => {
+        content.classList.remove('active');
+        content.style.display = 'none';
+      });
+
+      const targetContent = document.getElementById(targetTab + '-tab-content');
+      if (targetContent) {
+        targetContent.classList.add('active');
+        targetContent.style.display = 'block';
+      }
+
+      // Initialize screen recording when switching to record tab
+      if (targetTab === 'record') {
+        initializeScreenRecording();
+      }
+    });
+  });
+
+  // Upload functionality (existing)
   const dropZone = document.getElementById('drop-zone');
   const fileInput = document.getElementById('video-file-input');
   const filePreview = document.getElementById('file-preview');
@@ -139,10 +312,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function handleFileSelect() {
     const file = fileInput.files[0];
     if (file) {
-      // Validate file type
-      const validTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime'];
+      // Validate file type (including WebM for screen recordings)
+      const validTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime', 'video/webm'];
       if (!validTypes.includes(file.type) && !file.type.startsWith('video/')) {
-        alert('Please select a valid video file (MP4, MOV, AVI)');
+        alert('Please select a valid video file (MP4, MOV, AVI, WebM)');
         resetFileInput();
         return;
       }
@@ -202,6 +375,513 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // The form will submit normally (no preventDefault)
   });
+
+  // Screen Recording functionality
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recordingStartTime = null;
+  let timerInterval = null;
+  let countdownInterval = null;
+
+  function initializeScreenRecording() {
+    // Check browser support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      showBrowserWarning();
+      return;
+    }
+
+    // Hide browser warning if supported
+    const warning = document.getElementById('browser-support-warning');
+    if (warning) warning.style.display = 'none';
+
+    // Show recording interface
+    const recordingInterface = document.getElementById('recording-interface');
+    if (recordingInterface) recordingInterface.style.display = 'block';
+
+    // Bind recording event listeners
+    bindRecordingEvents();
+  }
+
+  function showBrowserWarning() {
+    const warning = document.getElementById('browser-support-warning');
+    const recordingInterface = document.getElementById('recording-interface');
+    const recordTab = document.getElementById('record-tab');
+
+    if (warning) warning.style.display = 'block';
+    if (recordingInterface) recordingInterface.style.display = 'none';
+    if (recordTab) {
+      recordTab.style.opacity = '0.5';
+      recordTab.style.cursor = 'not-allowed';
+    }
+  }
+
+  function bindRecordingEvents() {
+    const startBtn = document.getElementById('start-recording-btn');
+    const stopBtn = document.getElementById('stop-recording-btn');
+    const submitBtn = document.getElementById('submit-recording-btn');
+    const restartBtn = document.getElementById('restart-recording-btn');
+
+    if (startBtn) startBtn.addEventListener('click', startRecordingSequence);
+    if (stopBtn) stopBtn.addEventListener('click', stopRecording);
+    if (submitBtn) submitBtn.addEventListener('click', submitRecording);
+    if (restartBtn) restartBtn.addEventListener('click', restartRecording);
+  }
+
+  function startRecordingSequence() {
+    showRecordingState('window-selection');
+    requestScreenRecording();
+  }
+
+  function startCountdown(stream) {
+    let count = 3;
+    const countdownNumber = document.getElementById('countdown-number');
+
+    if (countdownNumber) countdownNumber.textContent = count;
+
+    countdownInterval = setInterval(() => {
+      count--;
+      if (countdownNumber) countdownNumber.textContent = count;
+
+      if (count <= 0) {
+        clearInterval(countdownInterval);
+        startMediaRecording(stream);
+      }
+    }, 1000);
+  }
+
+  async function requestScreenRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { mediaSource: 'screen' },
+        audio: true
+      });
+
+      // After window selection, show countdown then start recording
+      showRecordingState('countdown');
+      startCountdown(stream);
+    } catch (error) {
+      console.error('Error accessing display media:', error);
+      handleRecordingError('Permission denied or recording failed. Please try again.');
+    }
+  }
+
+  function startMediaRecording(stream) {
+    recordedChunks = [];
+
+    // Try different codec options in order of preference
+    let mimeType = 'video/webm; codecs=vp9';
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = 'video/webm; codecs=vp8';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'video/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            handleRecordingError('Your browser does not support video recording in a compatible format.');
+            return;
+          }
+        }
+      }
+    }
+
+    console.log('Using codec:', mimeType);
+
+    try {
+      mediaRecorder = new MediaRecorder(stream, {
+        mimeType: mimeType,
+        videoBitsPerSecond: 2500000, // 2.5 Mbps for good quality
+        audioBitsPerSecond: 128000   // 128 kbps for audio
+      });
+    } catch (error) {
+      console.error('MediaRecorder creation failed:', error);
+      // Fallback without bitrate constraints
+      try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+      } catch (fallbackError) {
+        handleRecordingError('Failed to initialize screen recorder. Please try again.');
+        return;
+      }
+    }
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.push(event.data);
+        console.log('Chunk received:', event.data.size, 'bytes');
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      console.log('Recording stopped, total chunks:', recordedChunks.length);
+      stream.getTracks().forEach(track => track.stop());
+      processRecording();
+    };
+
+    mediaRecorder.onerror = (event) => {
+      console.error('MediaRecorder error:', event.error);
+      handleRecordingError('Recording failed: ' + event.error.message);
+    };
+
+    mediaRecorder.start(1000); // Record in 1-second chunks
+    recordingStartTime = Date.now();
+
+    showRecordingState('active');
+    startTimer();
+    showFloatingStopButton();
+    setupKeyboardShortcuts();
+
+    // Auto-stop at 90 seconds
+    setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        stopRecording();
+      }
+    }, 90000);
+  }
+
+  function startTimer() {
+    timerInterval = setInterval(() => {
+      const elapsed = Date.now() - recordingStartTime;
+      const seconds = Math.floor(elapsed / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+
+      const timerDisplay = document.getElementById('recording-timer');
+      if (timerDisplay) {
+        timerDisplay.textContent =
+          `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+      }
+
+      // Show warning at 80 seconds
+      if (seconds >= 80 && seconds < 90) {
+        const activeState = document.getElementById('recording-active');
+        if (activeState) {
+          activeState.style.background = '#fef2f2';
+          activeState.style.borderColor = '#f59e0b';
+        }
+      }
+    }, 1000);
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    hideFloatingStopButton();
+    removeKeyboardShortcuts();
+    showRecordingState('processing');
+  }
+
+  function processRecording() {
+    if (recordedChunks.length === 0) {
+      handleRecordingError('No video data was recorded. Please try again.');
+      return;
+    }
+
+    // Determine the correct MIME type based on what was recorded
+    let mimeType = 'video/webm';
+    if (mediaRecorder && mediaRecorder.mimeType) {
+      mimeType = mediaRecorder.mimeType;
+    }
+
+    console.log('Creating blob with MIME type:', mimeType);
+    const blob = new Blob(recordedChunks, { type: mimeType });
+
+    if (blob.size === 0) {
+      handleRecordingError('Recording failed - no data captured. Please try again.');
+      return;
+    }
+
+    console.log('Blob created successfully, size:', blob.size, 'bytes');
+
+    // Convert to video element for preview
+    const videoElement = document.getElementById('recorded-video');
+    if (videoElement) {
+      const videoUrl = URL.createObjectURL(blob);
+      videoElement.src = videoUrl;
+
+      // Add error handling for video element
+      videoElement.onerror = (e) => {
+        console.error('Video preview error:', e);
+        // Still allow submission even if preview fails
+        showRecordingState('preview');
+      };
+
+      videoElement.onloadeddata = () => {
+        console.log('Video preview loaded successfully');
+        console.log('Video duration:', videoElement.duration, 'seconds');
+        console.log('Video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
+      };
+    }
+
+    // Store blob for submission
+    window.recordedVideoBlob = blob;
+    window.recordedMimeType = mimeType;
+
+    showRecordingState('preview');
+  }
+
+  function submitRecording() {
+    if (!window.recordedVideoBlob) {
+      alert('No recording found. Please record again.');
+      return;
+    }
+
+    // Create form data with the recorded blob
+    const formData = new FormData();
+
+    // Determine file extension and type based on recorded format
+    const mimeType = window.recordedMimeType || 'video/webm';
+    let filename = 'screen-recording.webm';
+    let fileType = 'video/webm';
+
+    if (mimeType.includes('mp4')) {
+      filename = 'screen-recording.mp4';
+      fileType = 'video/mp4';
+    } else if (mimeType.includes('webm')) {
+      filename = 'screen-recording.webm';
+      fileType = 'video/webm';
+    }
+
+    console.log('Submitting recording:', filename, fileType, 'Size:', window.recordedVideoBlob.size);
+
+    const recordingFile = new File([window.recordedVideoBlob], filename, {
+      type: fileType
+    });
+
+    formData.append('video_audit[video]', recordingFile);
+
+    // Show loading state
+    const submitBtn = document.getElementById('submit-recording-btn');
+    if (submitBtn) {
+      submitBtn.textContent = 'Uploading...';
+      submitBtn.disabled = true;
+    }
+
+    // Submit to the same endpoint as file upload
+    fetch('/video_audits', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        // Handle redirect response from Rails
+        if (response.redirected) {
+          window.location.href = response.url;
+          return;
+        }
+        return response.text();
+      }
+      throw new Error('Upload failed');
+    })
+    .then(result => {
+      if (result) {
+        // If we get HTML back, reload the page
+        window.location.reload();
+      }
+    })
+    .catch(error => {
+      console.error('Upload error:', error);
+      alert('Upload failed. Please try again.');
+      if (submitBtn) {
+        submitBtn.textContent = 'Analyze Recording';
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  function restartRecording() {
+    // Clean up previous recording
+    if (window.recordedVideoBlob) {
+      URL.revokeObjectURL(window.recordedVideoBlob);
+      window.recordedVideoBlob = null;
+    }
+
+    // Stop any active recording
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try {
+        mediaRecorder.stop();
+      } catch (e) {
+        console.error('Error stopping recorder during restart:', e);
+      }
+    }
+
+    // Clear intervals
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+
+    // Clean up UI elements
+    hideFloatingStopButton();
+    removeKeyboardShortcuts();
+
+    recordedChunks = [];
+    showRecordingState('start');
+  }
+
+  // Clean up when user navigates away or closes tab
+  window.addEventListener('beforeunload', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      try {
+        mediaRecorder.stop();
+      } catch (e) {
+        console.error('Error stopping recorder on unload:', e);
+      }
+    }
+
+    if (window.recordedVideoBlob) {
+      URL.revokeObjectURL(window.recordedVideoBlob);
+    }
+  });
+
+  // Floating stop button functionality
+  function showFloatingStopButton() {
+    const floatingButton = document.getElementById('floating-stop-button');
+    if (floatingButton) {
+      floatingButton.style.display = 'block';
+      floatingButton.addEventListener('click', stopRecording);
+
+      // Add hover effect
+      floatingButton.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.05)';
+        this.style.background = '#dc2626';
+      });
+
+      floatingButton.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.background = '#ef4444';
+      });
+    }
+  }
+
+  function hideFloatingStopButton() {
+    const floatingButton = document.getElementById('floating-stop-button');
+    if (floatingButton) {
+      floatingButton.style.display = 'none';
+      floatingButton.removeEventListener('click', stopRecording);
+    }
+  }
+
+  // Keyboard shortcuts functionality
+  let keyboardShortcutHandler = null;
+
+  function setupKeyboardShortcuts() {
+    keyboardShortcutHandler = function(event) {
+      // Check for Ctrl+Shift+S (Windows/Linux) or Cmd+Shift+S (Mac)
+      if (event.shiftKey && (event.ctrlKey || event.metaKey) && event.code === 'KeyS') {
+        event.preventDefault();
+        stopRecording();
+      }
+    };
+
+    document.addEventListener('keydown', keyboardShortcutHandler);
+  }
+
+  function removeKeyboardShortcuts() {
+    if (keyboardShortcutHandler) {
+      document.removeEventListener('keydown', keyboardShortcutHandler);
+      keyboardShortcutHandler = null;
+    }
+  }
+
+  function showRecordingState(state) {
+    const states = ['start', 'window-selection', 'countdown', 'active', 'processing', 'preview'];
+
+    states.forEach(s => {
+      const element = document.getElementById(`recording-${s}`);
+      if (element) {
+        element.style.display = s === state ? 'block' : 'none';
+      }
+    });
+  }
+
+  function handleRecordingError(message) {
+    console.error('Recording error:', message);
+
+    // Show user-friendly error message
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 16px;
+      max-width: 400px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+
+    errorDiv.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg style="width: 20px; height: 20px; color: #dc2626; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+        <div>
+          <div style="color: #7f1d1d; font-weight: 600; margin-bottom: 4px;">Recording Error</div>
+          <div style="color: #7f1d1d; font-size: 14px;">${message}</div>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" style="color: #dc2626; background: none; border: none; cursor: pointer; padding: 4px;">×</button>
+      </div>
+    `;
+
+    document.body.appendChild(errorDiv);
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      if (errorDiv.parentElement) {
+        errorDiv.remove();
+      }
+    }, 10000);
+
+    showRecordingState('start');
+
+    // Clean up UI elements
+    hideFloatingStopButton();
+    removeKeyboardShortcuts();
+
+    // Clean up any existing recording
+    if (mediaRecorder) {
+      try {
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      } catch (e) {
+        console.error('Error stopping recorder:', e);
+      }
+    }
+
+    // Clear any intervals
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+  }
+
+  // Mobile detection for recording tab
+  if (isMobile) {
+    const recordTab = document.getElementById('record-tab');
+    if (recordTab) {
+      recordTab.style.display = 'none';
+    }
+  }
 });
 </script>
 
@@ -209,6 +889,105 @@ document.addEventListener('DOMContentLoaded', function() {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.tab-button.active {
+  background: #fff !important;
+  border-bottom: 2px solid #6366f1 !important;
+  color: #6366f1 !important;
+}
+
+.tab-content {
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 0 0 8px 8px;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+}
+
+.recording-section {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recording-state {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.record-button:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px);
+}
+
+.recording-indicator {
+  animation: pulse 1s infinite;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .upload-method-tabs {
+    flex-direction: column;
+  }
+
+  .tab-button {
+    border-radius: 8px 8px 0 0;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  .tab-button.active {
+    border-bottom: 1px solid #6366f1 !important;
+  }
+
+  .tab-content {
+    padding: 1rem;
+  }
+
+  .recording-state {
+    padding: 1rem !important;
+  }
+
+  #countdown-number {
+    font-size: 3rem !important;
+  }
+
+  #recording-timer {
+    font-size: 1.5rem !important;
+  }
+
+  #recorded-video {
+    max-height: 200px !important;
+  }
+
+  .recording-state div[style*="flex"] {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+}
+
+/* Hide record tab on mobile */
+@media (max-width: 768px) {
+  #record-tab {
+    display: none !important;
+  }
+
+  .upload-method-tabs {
+    display: none;
+  }
+
+  .tab-content {
+    border: none;
+    border-radius: 8px;
+    padding: 0;
+  }
 }
 </style>
 

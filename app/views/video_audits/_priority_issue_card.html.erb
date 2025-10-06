@@ -1,0 +1,96 @@
+<!-- Priority Issue Card -->
+<div class="priority-issue-card <%= priority_level %>" id="<%= issue_anchor_id(idx) %>" data-issue-id="<%= audit.issue_id_for_index(idx) %>">
+  <!-- Issue Header -->
+  <div class="issue-header">
+    <div class="issue-meta">
+      <span class="issue-id">[<%= audit.issue_id_for_index(idx) %>]</span>
+      <span class="issue-component"><%= extract_component(issue) %></span>
+    </div>
+    <h4 class="issue-title"><%= issue["painPointTitle"] %></h4>
+  </div>
+
+  <!-- Priority Indicator -->
+  <div class="priority-indicator <%= priority_level %>">
+    <span class="priority-badge">
+      <% case priority_level
+         when 'critical' %>
+           🔴 Critical
+         <% when 'important' %>
+           🟡 Important
+         <% when 'minor' %>
+           🔵 Minor
+         <% end %>
+    </span>
+    <span class="heuristic-tag"><%= extract_heuristic(issue) %></span>
+  </div>
+
+  <!-- Evidence Preview -->
+  <div class="evidence-preview">
+    <% if has_evidence?(issue) %>
+      <div class="evidence-thumbnail-large">
+        <% if issue["frameReference"].present? %>
+          <div class="frame-placeholder">
+            📸
+            <div class="frame-info">
+              <span class="frame-label">Video Frame</span>
+              <span class="frame-time"><%= extract_timestamp(issue) %></span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <button class="video-play-btn" onclick="openVideoClip('<%= issue_anchor_id(idx) %>')" title="Play video at this timestamp">
+        ▶️ View in Video
+      </button>
+    <% else %>
+      <div class="no-evidence-state">
+        <span class="no-evidence-icon">📋</span>
+        <span class="no-evidence-text">No video evidence available</span>
+        <p class="evidence-note">Consider manual testing for this issue</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Issue Description -->
+  <div class="issue-description">
+    <p class="description-text"><%= issue["issueDescription"] || 'No description available' %></p>
+  </div>
+
+  <!-- Recommendations -->
+  <% if issue["recommendations"].present? && issue["recommendations"].any? %>
+    <div class="recommendations-preview">
+      <h5 class="recommendations-title">
+        💡 Recommendations (<%= issue["recommendations"].length %>)
+      </h5>
+      <div class="recommendations-list">
+        <% issue["recommendations"].first(2).each do |rec| %>
+          <div class="recommendation-item">• <%= rec %></div>
+        <% end %>
+        <% if issue["recommendations"].length > 2 %>
+          <button class="show-more-recs" data-target="all-recs-<%= idx %>">
+            +<%= issue["recommendations"].length - 2 %> more
+          </button>
+          <div class="hidden-recommendations" id="all-recs-<%= idx %>" style="display: none;">
+            <% issue["recommendations"][2..-1].each do |rec| %>
+              <div class="recommendation-item">• <%= rec %></div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Action Buttons -->
+  <div class="card-actions">
+    <button class="action-btn primary" onclick="copyIssueToClipboard('<%= idx %>')" title="Copy to clipboard">
+      📋 Copy
+    </button>
+    <button class="action-btn secondary" onclick="DeepLinkManager.copyLinkToClipboard('<%= issue_anchor_id(idx) %>')" title="Share link">
+      🔗 Share
+    </button>
+    <% if has_evidence?(issue) %>
+      <button class="action-btn secondary" onclick="viewEvidence('<%= idx %>')" title="View evidence">
+        🔍 Evidence
+      </button>
+    <% end %>
+  </div>
+</div>

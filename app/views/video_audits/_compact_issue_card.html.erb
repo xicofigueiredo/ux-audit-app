@@ -1,0 +1,45 @@
+<!-- Compact Issue Card for Minor Issues -->
+<div class="compact-issue-card" id="<%= issue_anchor_id(idx) %>" data-issue-id="<%= audit.issue_id_for_index(idx) %>">
+  <div class="compact-header">
+    <div class="compact-meta">
+      <span class="issue-id">[<%= audit.issue_id_for_index(idx) %>]</span>
+      <span class="issue-component"><%= extract_component(issue) %></span>
+    </div>
+    <h5 class="compact-title"><%= issue["painPointTitle"] %></h5>
+  </div>
+
+  <div class="compact-content">
+    <p class="compact-description">
+      <%= truncate(issue["issueDescription"] || 'No description available', length: 100) %>
+    </p>
+
+    <% if issue["recommendations"].present? && issue["recommendations"].any? %>
+      <div class="compact-recommendation">
+        <strong>Quick fix:</strong> <%= issue["recommendations"].first %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="compact-footer">
+    <div class="compact-badges">
+      <span class="heuristic-badge-small"><%= truncate(extract_heuristic(issue), length: 20) %></span>
+      <% if has_evidence?(issue) %>
+        <span class="evidence-indicator">📸</span>
+      <% end %>
+    </div>
+
+    <div class="compact-actions">
+      <button class="compact-btn" onclick="DeepLinkManager.copyLinkToClipboard('<%= issue_anchor_id(idx) %>')" title="Share">
+        🔗
+      </button>
+      <button class="compact-btn" onclick="copyIssueToClipboard('<%= idx %>')" title="Copy">
+        📋
+      </button>
+      <% if has_evidence?(issue) %>
+        <button class="compact-btn" onclick="openVideoClip('<%= issue_anchor_id(idx) %>')" title="View video">
+          ▶️
+        </button>
+      <% end %>
+    </div>
+  </div>
+</div>

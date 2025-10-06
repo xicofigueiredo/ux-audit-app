@@ -11,8 +11,8 @@ Rails.application.configure do
     policy.img_src     :self, :https, :data
     policy.object_src  :none
 
-    # Allow Google Analytics and Tailwind CDN scripts
-    policy.script_src  :self, :https, :unsafe_inline,
+    # Allow Google Analytics and Tailwind CDN scripts with specific nonce handling
+    policy.script_src  :self, :https,
                        'https://www.googletagmanager.com',
                        'https://www.google-analytics.com',
                        'https://cdn.tailwindcss.com'
