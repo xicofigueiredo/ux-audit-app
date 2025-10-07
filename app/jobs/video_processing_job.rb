@@ -19,7 +19,12 @@ class VideoProcessingJob < ApplicationJob
 
       # Extract frames using FFmpeg directly (1 frame per second)
       require 'shellwords'
-      ffmpeg_command = "ffmpeg -i #{Shellwords.escape(video_path)} -vf fps=1 #{Shellwords.escape(frames_dir)}/frame_%04d.jpg"
+
+      # Use full path to ffmpeg to ensure it's found in Sidekiq environment
+      ffmpeg_path = `which ffmpeg`.strip
+      ffmpeg_path = 'ffmpeg' if ffmpeg_path.empty? # Fallback to PATH
+
+      ffmpeg_command = "#{ffmpeg_path} -i #{Shellwords.escape(video_path)} -vf fps=1 #{Shellwords.escape(frames_dir)}/frame_%04d.jpg"
 
       unless system(ffmpeg_command)
         raise "FFmpeg failed to extract frames from video"

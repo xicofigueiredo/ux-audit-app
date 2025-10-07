@@ -12,7 +12,7 @@ module AnalyticsHelper
     # For background jobs or server-side tracking
     if defined?(content_for)
       content_for :analytics_events do
-        javascript_tag do
+        javascript_tag nonce: true do
           raw "gtag('event', '#{event_name}', #{sanitized_params.to_json});"
         end
       end
@@ -30,7 +30,7 @@ module AnalyticsHelper
     params[:page_location] = page_location if page_location.present?
 
     content_for :analytics_events do
-      javascript_tag do
+      javascript_tag nonce: true do
         if params.any?
           raw "gtag('config', 'G-JYRMQDB1V4', #{params.to_json});"
         end
@@ -95,7 +95,7 @@ module AnalyticsHelper
       event_action: 'upload_error',
       error_type: error_type
     }
-    params[:error_message] = truncate(message, length: 100) if message.present?
+    params[:error_message] = truncate_string(message, length: 100) if message.present?
 
     track_event('video_upload_error', params)
   end
@@ -153,7 +153,7 @@ module AnalyticsHelper
     params = {
       event_category: 'knowledge_base',
       event_action: 'search',
-      search_term: truncate(query, length: 50)
+      search_term: truncate_string(query, length: 50)
     }
     params[:results_count] = results_count.to_i if results_count.present?
 
@@ -166,7 +166,7 @@ module AnalyticsHelper
       event_action: 'document_view',
       document_id: document_id
     }
-    params[:document_title] = truncate(document_title, length: 50) if document_title.present?
+    params[:document_title] = truncate_string(document_title, length: 50) if document_title.present?
 
     track_event('knowledge_document_view', params)
   end
@@ -178,7 +178,7 @@ module AnalyticsHelper
       event_action: error_type,
       page: page
     }
-    params[:error_message] = truncate(message, length: 100) if message.present?
+    params[:error_message] = truncate_string(message, length: 100) if message.present?
 
     track_event('application_error', params)
   end
@@ -195,7 +195,7 @@ module AnalyticsHelper
   # Page Performance Tracking
   def track_core_web_vitals
     content_for :analytics_events do
-      javascript_tag do
+      javascript_tag nonce: true do
         raw <<~JAVASCRIPT
           // Track Core Web Vitals
           function trackWebVitals() {
@@ -244,6 +244,18 @@ module AnalyticsHelper
   end
 
   private
+
+  # Custom truncate method that works in all contexts (views, controllers, and jobs)
+  def truncate_string(text, length:, separator: ' ', omission: '...')
+    return text if text.nil? || text.length <= length
+
+    stop = length - omission.length
+    if separator
+      text[0, stop].rstrip + omission
+    else
+      text[0, stop] + omission
+    end
+  end
 
   def get_user_context
     return {} unless defined?(current_user) && current_user&.persisted?

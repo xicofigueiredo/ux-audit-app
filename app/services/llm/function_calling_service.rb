@@ -37,9 +37,14 @@ module Llm
               totalFramesAnalyzed: {
                 type: "string",
                 description: "The total number of frames analyzed in this batch or complete analysis"
+              },
+              workflowCriticality: {
+                type: "string",
+                enum: ["Business-Critical", "High-Impact", "Standard", "Low-Impact"],
+                description: "The business criticality of this workflow. Business-Critical: checkout, payment, signup, login. High-Impact: onboarding, core features, search. Standard: settings, profile, preferences. Low-Impact: help pages, about pages"
               }
             },
-            required: ["workflowtitle", "userGoal", "workflowSteps", "totalFramesAnalyzed"]
+            required: ["workflowtitle", "userGoal", "workflowSteps", "totalFramesAnalyzed", "workflowCriticality"]
           },
           identifiedIssues: {
             type: "array",
@@ -61,7 +66,7 @@ module Llm
                 severity: {
                   type: "string",
                   enum: ["High", "Medium", "Low"],
-                  description: "The severity level of the issue based on user impact and frequency"
+                  description: "Context-aware severity level considering: (1) user impact and frequency, (2) workflow criticality. Business-Critical flows (checkout, payment, signup) should receive higher severity for similar issues compared to Low-Impact flows (settings, help pages). Example: 'Unclear button' in checkout = High, same issue in settings = Medium"
                 },
                 issueDescription: {
                   type: "string",
@@ -230,9 +235,9 @@ module Llm
       end
       
       # Validate workflow summary fields
-      workflow_required = ["workflowtitle", "userGoal", "workflowSteps", "totalFramesAnalyzed"]
+      workflow_required = ["workflowtitle", "userGoal", "workflowSteps", "totalFramesAnalyzed", "workflowCriticality"]
       missing_workflow = workflow_required.select { |field| data["workflowSummary"][field].blank? }
-      
+
       if missing_workflow.any?
         raise ValidationError, "Missing workflow summary fields: #{missing_workflow.join(', ')}"
       end
@@ -244,7 +249,14 @@ module Llm
       if title && title.length > 100
         raise ValidationError, "Workflow title too long (max 100 characters)"
       end
-      
+
+      # Validate workflow criticality
+      criticality = data.dig("workflowSummary", "workflowCriticality")
+      valid_criticality = ["Business-Critical", "High-Impact", "Standard", "Low-Impact"]
+      if criticality && !valid_criticality.include?(criticality)
+        raise ValidationError, "Invalid workflow criticality: #{criticality}. Must be one of: #{valid_criticality.join(', ')}"
+      end
+
       # Validate workflow steps
       steps = data.dig("workflowSummary", "workflowSteps")
       if steps && steps.length > 20

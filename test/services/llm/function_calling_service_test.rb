@@ -62,7 +62,8 @@ class Llm::FunctionCallingServiceTest < ActiveSupport::TestCase
         "workflowtitle" => "Test workflow",
         "userGoal" => "Test goal",
         "workflowSteps" => ["Step 1", "Step 2"],
-        "totalFramesAnalyzed" => "10"
+        "totalFramesAnalyzed" => "10",
+        "workflowCriticality" => "Standard"
       },
       "identifiedIssues" => [
         {
@@ -104,7 +105,8 @@ class Llm::FunctionCallingServiceTest < ActiveSupport::TestCase
         workflowtitle: "Test workflow",
         userGoal: "Test goal",
         workflowSteps: ["Step 1"],
-        totalFramesAnalyzed: "10"
+        totalFramesAnalyzed: "10",
+        workflowCriticality: "Standard"
       },
       identifiedIssues: [
         {
@@ -140,7 +142,8 @@ class Llm::FunctionCallingServiceTest < ActiveSupport::TestCase
                   "workflowtitle" => "Test workflow",
                   "userGoal" => "Test goal",
                   "workflowSteps" => ["Step 1"],
-                  "totalFramesAnalyzed" => "10"
+                  "totalFramesAnalyzed" => "10",
+                  "workflowCriticality" => "Standard"
                 },
                 "identifiedIssues" => [],
                 "analysisMetadata" => {
@@ -171,11 +174,78 @@ class Llm::FunctionCallingServiceTest < ActiveSupport::TestCase
         }
       ]
     }
-    
+
     result = @service.process_function_call(mock_response)
-    
+
     assert_nil result[:function_name]
     assert_equal 0.0, result[:confidence_score]
     assert_includes result[:error], "No function call found"
+  end
+
+  test "validates workflow criticality correctly" do
+    valid_criticality_values = ["Business-Critical", "High-Impact", "Standard", "Low-Impact"]
+
+    valid_criticality_values.each do |criticality|
+      valid_data = {
+        "workflowSummary" => {
+          "workflowtitle" => "Test workflow",
+          "userGoal" => "Test goal",
+          "workflowSteps" => ["Step 1"],
+          "totalFramesAnalyzed" => "10",
+          "workflowCriticality" => criticality
+        },
+        "identifiedIssues" => [],
+        "analysisMetadata" => {
+          "analysisType" => "batch",
+          "confidenceScore" => 0.9
+        }
+      }
+
+      assert_nothing_raised do
+        @service.validate_function_data(valid_data)
+      end
+    end
+  end
+
+  test "raises error for invalid workflow criticality" do
+    invalid_data = {
+      "workflowSummary" => {
+        "workflowtitle" => "Test workflow",
+        "userGoal" => "Test goal",
+        "workflowSteps" => ["Step 1"],
+        "totalFramesAnalyzed" => "10",
+        "workflowCriticality" => "InvalidCriticality"
+      },
+      "identifiedIssues" => [],
+      "analysisMetadata" => {
+        "analysisType" => "batch",
+        "confidenceScore" => 0.9
+      }
+    }
+
+    assert_raises(Llm::FunctionCallingService::ValidationError) do
+      @service.validate_function_data(invalid_data)
+    end
+  end
+
+  test "raises error for missing workflow criticality" do
+    invalid_data = {
+      "workflowSummary" => {
+        "workflowtitle" => "Test workflow",
+        "userGoal" => "Test goal",
+        "workflowSteps" => ["Step 1"],
+        "totalFramesAnalyzed" => "10"
+        # Missing workflowCriticality
+      },
+      "identifiedIssues" => [],
+      "analysisMetadata" => {
+        "analysisType" => "batch",
+        "confidenceScore" => 0.9
+      }
+    }
+
+    assert_raises(Llm::FunctionCallingService::ValidationError) do
+      @service.validate_function_data(invalid_data)
+    end
   end
 end 

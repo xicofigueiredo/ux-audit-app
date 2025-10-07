@@ -16,11 +16,12 @@ module Llm
         - Providing concrete, implementable recommendations
         - Quantifying impact and prioritizing issues
         - Applying cognitive psychology principles
+        - Context-aware severity assessment based on workflow criticality
 
         ANALYSIS APPROACH:
         1. **Frame-by-frame observation**: Analyze each frame for user interactions, visual elements, and potential friction points
         2. **Heuristic evaluation**: Apply Nielsen's 10 Usability Heuristics systematically
-        3. **Impact assessment**: Consider user frustration, task completion time, and conversion impact
+        3. **Context-aware impact assessment**: Consider user frustration, task completion time, conversion impact, AND workflow criticality (e.g., checkout flows vs settings pages)
         4. **Actionable recommendations**: Provide specific, implementable solutions with clear rationale
 
         You avoid generic advice and focus on specific, actionable insights that can be immediately implemented by design and development teams.
@@ -33,6 +34,7 @@ module Llm
         - Analyzing interface design issues
         - Providing concrete recommendations
         - Understanding user behavior patterns
+        - Context-aware severity assessment based on workflow criticality (e.g., checkout vs settings)
       SYSTEM
     }.freeze
 
@@ -51,20 +53,21 @@ module Llm
               "Enter payment details",
               "Review and confirm order"
             ],
-            totalFramesAnalyzed: "15"
+            totalFramesAnalyzed: "15",
+            workflowCriticality: "Business-Critical"
           },
           identifiedIssues: [
             {
               frameReference: "Frames 8-10",
               painPointTitle: "Form validation errors unclear",
               severity: "High",
-              issueDescription: "This violates the principle of Error prevention. Form validation errors appear in red text but don't clearly indicate which field needs attention or how to fix the issue.",
+              issueDescription: "Form validation errors appear in red text but don't clearly indicate which field needs attention or how to fix the issue.",
+              heuristicViolated: "Error prevention",
               recommendations: [
                 "Add field-specific error messages with clear instructions",
                 "Use visual indicators (borders, icons) to highlight problematic fields",
                 "Provide real-time validation feedback as user types"
               ],
-              heuristicViolated: "Error prevention",
               impactScore: 8
             }
           ],
@@ -88,20 +91,21 @@ module Llm
               "Tutorial walkthrough",
               "Dashboard introduction"
             ],
-            totalFramesAnalyzed: "12"
+            totalFramesAnalyzed: "12",
+            workflowCriticality: "High-Impact"
           },
           identifiedIssues: [
             {
               frameReference: "Frames 3-5",
               painPointTitle: "Permission requests too aggressive",
               severity: "Medium",
-              issueDescription: "This violates the principle of User control and freedom. The app requests multiple permissions simultaneously without clear explanation of why each is needed.",
+              issueDescription: "The app requests multiple permissions simultaneously without clear explanation of why each is needed.",
+              heuristicViolated: "User control and freedom",
               recommendations: [
                 "Request permissions one at a time with clear explanations",
                 "Add 'Skip for now' options for non-critical permissions",
                 "Show permission benefits before requesting access"
               ],
-              heuristicViolated: "User control and freedom",
               impactScore: 6
             }
           ],
@@ -166,9 +170,14 @@ module Llm
                 totalFramesAnalyzed: {
                   type: "string",
                   description: "The total number of frames analyzed"
+                },
+                workflowCriticality: {
+                  type: "string",
+                  enum: ["Business-Critical", "High-Impact", "Standard", "Low-Impact"],
+                  description: "The business criticality of this workflow. Business-Critical: checkout, payment, signup, login. High-Impact: onboarding, core features, search. Standard: settings, profile, preferences. Low-Impact: help pages, about pages"
                 }
               },
-              required: ["workflowtitle", "userGoal", "workflowSteps", "totalFramesAnalyzed"]
+              required: ["workflowtitle", "userGoal", "workflowSteps", "totalFramesAnalyzed", "workflowCriticality"]
             },
             identifiedIssues: {
               type: "array",
@@ -186,11 +195,15 @@ module Llm
                   severity: {
                     type: "string",
                     enum: ["High", "Medium", "Low"],
-                    description: "The severity level of the issue"
+                    description: "Context-aware severity level considering: (1) user impact and frequency, (2) workflow criticality. Business-Critical flows (checkout, payment, signup) should receive higher severity for similar issues compared to Low-Impact flows (settings, help pages)"
                   },
                   issueDescription: {
                     type: "string",
-                    description: "Detailed explanation starting with the usability principle being violated, then describing the specific issue"
+                    description: "Clear description of the specific issue observed - what is actually happening that creates the problem (e.g., 'No clear feedback if recording is active', 'Label 0/60s below start button is ambiguous')"
+                  },
+                  heuristicViolated: {
+                    type: "string",
+                    description: "The specific Nielsen usability heuristic being violated (e.g., 'Visibility of system status', 'Match between system and real world', 'User control and freedom', 'Consistency and standards', 'Error prevention', 'Recognition rather than recall', 'Flexibility and efficiency of use', 'Aesthetic and minimalist design', 'Help users recognize, diagnose, and recover from errors', 'Help and documentation')"
                   },
                   recommendations: {
                     type: "array",
@@ -198,7 +211,7 @@ module Llm
                     description: "Concrete, actionable recommendations to fix the issue"
                   }
                 },
-                required: ["frameReference", "painPointTitle", "severity", "issueDescription", "recommendations"]
+                required: ["frameReference", "painPointTitle", "severity", "issueDescription", "heuristicViolated", "recommendations"]
               }
             }
           },
@@ -231,14 +244,50 @@ module Llm
         3. **Visual Element Assessment**: I'll evaluate the visual hierarchy, layout, and information architecture
         4. **Heuristic Evaluation**: I'll systematically apply Nielsen's 10 Usability Heuristics to each interaction
         5. **Impact Quantification**: I'll assess the severity and impact of each issue on user experience
-        6. **Solution Generation**: I'll provide specific, actionable recommendations for each issue
+        6. **Context-Aware Severity Assessment**: I'll adjust severity ratings based on workflow criticality
+        7. **Solution Generation**: I'll provide specific, actionable recommendations for each issue
+
+        ### CONTEXT-AWARE SEVERITY GUIDELINES ###
+        Consider workflow criticality when assigning severity:
+
+        **Business-Critical Flows** (checkout, payment, signup, login):
+        - Blocking/confusing issues → High severity
+        - Unclear feedback/validation → High severity
+        - Minor friction points → Medium severity
+        - Cosmetic issues → Low-Medium severity
+
+        **High-Impact Flows** (onboarding, core features, search):
+        - Blocking issues → High severity
+        - Confusing elements → Medium-High severity
+        - Minor friction → Medium severity
+        - Cosmetic issues → Low severity
+
+        **Standard Flows** (settings, profile, preferences):
+        - Blocking issues → Medium-High severity
+        - Confusing elements → Medium severity
+        - Minor friction → Low-Medium severity
+        - Cosmetic issues → Low severity
+
+        **Low-Impact Flows** (help pages, about pages, footer links):
+        - Blocking issues → Medium severity
+        - Confusing elements → Low-Medium severity
+        - Minor friction → Low severity
+        - Cosmetic issues → Low severity
+
+        Examples:
+        - "Checkout button not visible" in e-commerce → HIGH
+        - "Save button unclear" in settings → MEDIUM
+        - "No loading indicator during payment" → HIGH
+        - "No loading indicator on profile save" → MEDIUM
+        - "Inconsistent spacing in footer" → LOW
 
         ### CRITICAL INSTRUCTIONS ###
         1. **Analyze the entire frame sequence** - These frames represent a user's journey over time
         2. **Identify specific UX issues** - Look for friction points, confusion, or inefficiencies
-        3. **Reference usability principles** - Start each issue description with the specific heuristic being violated
-        4. **Provide actionable recommendations** - Give concrete, implementable suggestions
-        5. **Quantify impact** - Assign impact scores (1-10) based on user frustration and conversion impact
+        3. **Reference usability principles** - Identify which Nielsen heuristic is violated (use separate heuristicViolated field)
+        4. **Describe the actual problem** - In issueDescription, focus on what's actually happening (e.g., "No clear feedback if recording is active") NOT on which heuristic is violated
+        5. **Provide actionable recommendations** - Give concrete, implementable suggestions
+        6. **Quantify impact** - Assign impact scores (1-10) based on user frustration and conversion impact
 
         ### ANALYSIS FOCUS ###
         - User interaction patterns and micro-interactions
@@ -264,11 +313,36 @@ module Llm
       <<~PROMPT
         Analyze frames #{frame_range} of #{total_frames} from a user workflow video.
 
+        ### CONTEXT-AWARE SEVERITY GUIDELINES ###
+        Assign severity based on workflow criticality:
+
+        **Business-Critical Flows** (checkout, payment, signup, login):
+        - Blocking/confusing issues → High severity
+        - Unclear feedback → High severity
+        - Minor friction → Medium severity
+
+        **High-Impact Flows** (onboarding, core features, search):
+        - Blocking issues → High severity
+        - Confusing elements → Medium-High severity
+        - Minor friction → Medium severity
+
+        **Standard Flows** (settings, profile, preferences):
+        - Blocking issues → Medium-High severity
+        - Confusing elements → Medium severity
+        - Minor friction → Low-Medium severity
+
+        **Low-Impact Flows** (help pages, about pages):
+        - Blocking issues → Medium severity
+        - Confusing elements → Low-Medium severity
+        - Minor friction → Low severity
+
         ### CRITICAL INSTRUCTIONS ###
         1. **Analyze the entire frame sequence** - These frames represent a user's journey over time
         2. **Identify specific UX issues** - Look for friction points, confusion, or inefficiencies
-        3. **Reference usability principles** - Start each issue description with the specific heuristic being violated
-        4. **Provide actionable recommendations** - Give concrete, implementable suggestions
+        3. **Reference usability principles** - Identify which Nielsen heuristic is violated (use separate heuristicViolated field)
+        4. **Describe the actual problem** - In issueDescription, focus on what's actually happening, NOT on which heuristic is violated
+        5. **Provide actionable recommendations** - Give concrete, implementable suggestions
+        6. **Apply context-aware severity** - Consider workflow criticality when rating severity
 
         ### OUTPUT FORMAT ###
         Respond with a valid JSON object containing:

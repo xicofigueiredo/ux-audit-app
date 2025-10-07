@@ -39,7 +39,7 @@
       </div>
     </div>
   </div>
-  <script>
+  <script nonce="<%= content_security_policy_nonce %>">
     // Poll every 3 seconds to check if the audit is complete and update progress
     const pollInterval = setInterval(function() {
       fetch(window.location.pathname + '.json')
@@ -104,94 +104,168 @@
   <header class="analysis-header">
     <div class="header-left">
       <a href="/" class="back-link">&larr; Back</a>
-      <span class="workflow-title">
-        <%
-          llm = @audit.parsed_llm_response
-          short_title = nil
-          user_goal = nil
-
-          if llm.present?
-            if llm.is_a?(String) && llm.strip.start_with?('{')
-              begin
-                llm = JSON.parse(llm)
-              rescue JSON::ParserError
-                llm = {}
-              end
-            end
-            if llm.is_a?(Hash)
-              short_title = llm.dig('workflowSummary', 'workflowtitle')
-              user_goal = llm.dig('workflowSummary', 'userGoal')
-            end
-          end
-        %>
-        <% if short_title.present? %>
-          <%= short_title %>
-        <% elsif user_goal.present? %>
-          <%= truncate(user_goal, length: 40) %>
-        <% else %>
-          <%= @audit.status.capitalize %>
-        <% end %>
-      </span>
+      <h1 class="report-title">Workflow Report</h1>
+    </div>
+    <div class="header-right">
+      <button class="filter-btn" onclick="alert('Filters coming soon!')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+        </svg>
+        Filters
+      </button>
+      <button class="export-btn" onclick="window.print()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        Export
+      </button>
     </div>
   </header>
 
-  <div class="analysis-body">
-    <!-- Sidebar Timeline -->
-    <aside class="flow-timeline">
-      <h4>Flow Timeline</h4>
-      <ul class="timeline-steps">
-        <li class="timeline-step all-steps selected" onclick="highlightCard('all')">All Steps</li>
-        <% if @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
-          <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
-            <li class="timeline-step" onclick="highlightCard(<%= idx %>)">
-              <span class="step-title"><%= issue["painPointTitle"] %></span>
+  <!-- Summary Statistics Cards -->
+  <% if @audit.completed? || @audit.status == 'partial' %>
+    <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
+      <%
+        issues = @audit.parsed_llm_response["identifiedIssues"]
+        stats = calculate_severity_stats(issues)
+      %>
+      <div class="summary-stats-container">
+        <div class="stat-card total">
+          <div class="stat-label">Total Issues</div>
+          <div class="stat-value"><%= stats[:total] %></div>
+        </div>
+        <div class="stat-card high-severity">
+          <div class="stat-label">
+            High Severity
+            <button class="severity-info-icon" onclick="openSeverityInfo('high')" title="Learn about High severity" aria-label="Information about High severity">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <text x="8" y="11" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">i</text>
+              </svg>
+            </button>
+          </div>
+          <div class="stat-value high"><%= stats[:high] %></div>
+        </div>
+        <div class="stat-card medium-severity">
+          <div class="stat-label">
+            Medium
+            <button class="severity-info-icon" onclick="openSeverityInfo('medium')" title="Learn about Medium severity" aria-label="Information about Medium severity">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <text x="8" y="11" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">i</text>
+              </svg>
+            </button>
+          </div>
+          <div class="stat-value medium"><%= stats[:medium] %></div>
+        </div>
+        <div class="stat-card low-severity">
+          <div class="stat-label">
+            Low
+            <button class="severity-info-icon" onclick="openSeverityInfo('low')" title="Learn about Low severity" aria-label="Information about Low severity">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <text x="8" y="11" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">i</text>
+              </svg>
+            </button>
+          </div>
+          <div class="stat-value low"><%= stats[:low] %></div>
+        </div>
+
+        <!-- Timeline Bar - Full Width -->
+        <div class="timeline-bar-container">
+          <h4 class="timeline-heading">Timeline</h4>
+          <div class="timeline-ranges">
+            <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
               <% if issue["frameReference"] %>
-                <span class="step-time"><%= frame_range_to_time(issue["frameReference"]) %></span>
+                <button class="timeline-range-btn" onclick="highlightCard(<%= idx %>)">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 3px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                  <%= frame_range_to_time(issue["frameReference"]) %>
+                </button>
               <% end %>
-            </li>
-          <% end %>
-        <% end %>
-      </ul>
-    </aside>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workflow Analysis - Separate Collapsible Section -->
+      <% if @audit.parsed_llm_response.dig('workflowSummary') %>
+        <div class="workflow-analysis-section">
+          <button class="workflow-toggle-btn" onclick="toggleWorkflowDetails()">
+            <span class="workflow-title"><%= @audit.parsed_llm_response['workflowSummary']['workflowtitle'] || 'Workflow Analysis' %></span>
+            <svg class="chevron-workflow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          <div class="workflow-details collapsed" id="workflow-details">
+            <div class="workflow-goal">
+              <strong>User Goal:</strong> <%= @audit.parsed_llm_response['workflowSummary']['userGoal'] %>
+            </div>
+            <% if @audit.parsed_llm_response['workflowSummary']['workflowSteps'].is_a?(Array) %>
+              <div class="workflow-steps">
+                <strong>Steps:</strong>
+                <ol class="workflow-steps-list-compact">
+                  <% @audit.parsed_llm_response['workflowSummary']['workflowSteps'].each do |step| %>
+                    <% clean_step = step.gsub(/^\d+\.\s*/, '') %>
+                    <li><%= clean_step %></li>
+                  <% end %>
+                </ol>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <div class="analysis-body">
 
     <!-- Main Content Area -->
     <main class="analysis-main">
-      <% if @audit.parsed_llm_response.dig('workflowSummary') %>
-        <div class="main-summary-card full-width">
-          <h3>User Goal</h3>
-          <p><%= @audit.parsed_llm_response['workflowSummary']['userGoal'] %></p>
-          <% if @audit.parsed_llm_response['workflowSummary']['workflowSteps'].is_a?(Array) %>
-            <h4>Workflow Steps</h4>
-            <ol class="workflow-steps-list">
-              <% @audit.parsed_llm_response['workflowSummary']['workflowSteps'].each do |step| %>
-                <% clean_step = step.gsub(/^\d+\.\s*/, '') %>
-                <li><%= clean_step %></li>
-              <% end %>
-            </ol>
-          <% end %>
-        </div>
-      <% end %>
       <div class="tab-content overview-tab active">
         <% if @audit.completed? || @audit.status == 'partial' %>
           <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
             <div class="issue-card-grid">
               <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
                 <div class="issue-card" id="issue-card-<%= idx %>">
-                  <% if issue["frameReference"] %>
-                    <div class="issue-timestamp">
-                      <span class="timestamp-label">Time:</span>
-                      <span class="timestamp-value"><%= frame_range_to_time(issue["frameReference"]) %></span>
-                    </div>
-                  <% end %>
+                  <!-- Issue ID and Title with Severity -->
                   <div class="issue-card-header">
+                    <div class="issue-id-title">
+                      <span class="issue-id">[<%= generate_issue_id(@audit.id, idx) %>]</span>
+                      <h3 class="issue-title"><%= issue["painPointTitle"] %></h3>
+                    </div>
                     <span class="issue-severity <%= issue["severity"].downcase %>">
                       <%= issue["severity"].capitalize %>
                     </span>
-                    <span class="issue-title"><%= issue["painPointTitle"] %></span>
                   </div>
-                  <div class="issue-description">
-                    <%= issue["issueDescription"] %>
+
+                  <!-- Heuristic Reference -->
+                  <% if issue["heuristicViolated"].present? %>
+                    <div class="issue-heuristic">
+                      Heuristic: <%= extract_heuristic_label(issue["heuristicViolated"]) %>
+                    </div>
+                  <% end %>
+
+                  <!-- Time -->
+                  <% if issue["frameReference"] %>
+                    <div class="issue-time">
+                      <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
+                      </svg>
+                      <span class="time-label">Time:</span>
+                      <span class="time-value"><%= frame_range_to_time(issue["frameReference"]) %></span>
+                    </div>
+                  <% end %>
+
+                  <!-- Evidence Section -->
+                  <div class="issue-evidence">
+                    <strong>Evidence:</strong>
+                    <%= extract_evidence(issue["issueDescription"]) %>
                   </div>
+
+                  <!-- Recommendations -->
                   <div class="issue-recommendations">
                     <strong>Recommendations:</strong>
                     <ul>
@@ -200,9 +274,21 @@
                       <% end %>
                     </ul>
                   </div>
+
+                  <!-- Card Actions -->
                   <div class="issue-card-actions">
-                    <button class="copy-btn" onclick="copyIssue(<%= @audit.id %>, <%= idx %>)">Copy</button>
-                    <button class="jira-btn" onclick="trackJiraIntegration(<%= @audit.id %>, <%= idx %>)">Jira</button>
+                    <button class="copy-btn" onclick="copyIssue(<%= @audit.id %>, <%= idx %>)">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                      </svg>
+                      Copy
+                    </button>
+                    <button class="jira-btn" onclick="trackJiraIntegration(<%= @audit.id %>, <%= idx %>)">
+                      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z"></path>
+                      </svg>
+                      Jira
+                    </button>
                   </div>
                 </div>
               <% end %>
@@ -270,6 +356,14 @@
       </div>
     </main>
   </div>
+
+  <!-- Severity Info Modal -->
+  <div id="severityModal" class="severity-modal" style="display: none;" onclick="closeSeverityModal(event)">
+    <div class="severity-modal-content" onclick="event.stopPropagation()">
+      <button class="severity-modal-close" onclick="closeSeverityModal()" aria-label="Close modal">&times;</button>
+      <div id="severityModalBody"></div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -286,63 +380,240 @@
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
 }
-.header-left { display: flex; align-items: center; gap: 18px; }
-.back-link { color: #6366f1; text-decoration: none; font-weight: 500; }
-.workflow-title {
-  font-size: 1.25rem;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.back-link {
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.back-link:hover {
+  color: #4f46e5;
+}
+.report-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.filter-btn, .export-btn {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+  transition: all 0.2s;
+}
+.filter-btn:hover, .export-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Summary Statistics Cards */
+.summary-stats-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px 40px 12px 40px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  text-align: left;
+}
+.stat-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+.stat-value.high { color: #dc2626; }
+.stat-value.medium { color: #f59e0b; }
+.stat-value.low { color: #2563eb; }
+
+/* Timeline Bar - Full Width */
+.timeline-bar-container {
+  grid-column: 1 / -1;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 4px;
+}
+
+.timeline-heading {
+  font-size: 0.8rem;
   font-weight: 600;
   color: #1e293b;
-  margin-left: 18px;
-  max-width: 700px;
-  white-space: pre-line;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
-.project-title { font-size: 1.5rem; font-weight: 600; margin: 0; }
-.analyzed-time { color: #6b7280; font-size: 0.95rem; margin-left: 8px; }
-.header-center { display: flex; align-items: center; gap: 8px; }
-.ux-score-label { color: #6b7280; font-size: 0.9rem; }
-.ux-score-value { color: #6366f1; font-size: 2rem; font-weight: 700; }
-.ux-score-circle { width: 36px; height: 36px; border: 3px solid #6366f1; border-radius: 50%; display: inline-block; }
-.header-right { display: flex; align-items: center; gap: 16px; }
-.export-btn, .share-btn { background: #f3f4f6; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer; }
-.export-btn:hover, .share-btn:hover { background: #e0e7ff; }
-.user-info { background: #ede9fe; color: #7c3aed; padding: 6px 14px; border-radius: 20px; font-weight: 500; }
+
+.timeline-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.timeline-range-btn {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+}
+
+.timeline-range-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.timeline-range-btn svg {
+  transition: transform 0.2s;
+}
+
+.timeline-range-btn:hover svg {
+  transform: translateX(2px);
+}
+
+/* Workflow Analysis Section */
+.workflow-analysis-section {
+  background: #fff;
+  padding: 12px 40px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.workflow-toggle-btn {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.workflow-toggle-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.workflow-title {
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.chevron-workflow {
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.workflow-details {
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
+  background: #f9fafb;
+  border-radius: 6px;
+  max-height: 0;
+  opacity: 0;
+  padding: 0 16px;
+}
+
+.workflow-details.expanded {
+  max-height: 600px;
+  opacity: 1;
+  padding: 16px;
+  margin-top: 10px;
+}
+
+.workflow-goal {
+  font-size: 0.85rem;
+  color: #374151;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.workflow-goal strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.workflow-steps {
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.workflow-steps strong {
+  color: #1e293b;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.workflow-steps-list-compact {
+  margin: 0 0 0 20px;
+  padding: 0;
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.workflow-steps-list-compact li {
+  margin-bottom: 6px;
+}
 
 .analysis-body {
-  display: flex;
-  align-items: flex-start;
+  background: #f9fafb;
 }
-.flow-timeline {
-  width: 260px; /* increased from 220px */
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  padding: 32px 0 0 0;
-  min-height: calc(100vh - 72px);
-  /* 72px header height */
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-}
-.flow-timeline h4 { margin-left: 32px; color: #374151; font-size: 1.1rem; font-weight: 600; }
-.timeline-steps { list-style: none; padding: 0 0 0 32px; margin: 24px 0 0 0; }
-.timeline-step {
-  padding: 10px 0;
-  color: #374151;
-  font-size: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  border-radius: 6px;
-  word-break: break-word;
-  white-space: normal;
-  line-height: 1.3;
-  max-width: 200px;
-}
-.timeline-step.selected, .timeline-step:hover { background: #f3f4f6; font-weight: 600; }
-.step-title { flex: 1; }
-.step-time { color: #6b7280; font-size: 0.95rem; margin-left: 12px; }
 
-.analysis-main { flex: 1; padding: 40px 48px; }
+.analysis-main {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 40px;
+}
 .tabs { display: flex; gap: 16px; margin-bottom: 24px; }
 .tab { background: #f3f4f6; border: none; border-radius: 6px 6px 0 0; padding: 10px 24px; font-weight: 500; cursor: pointer; color: #6b7280; }
 .tab.active { background: #fff; color: #6366f1; border-bottom: 2px solid #6366f1; }
@@ -351,68 +622,147 @@
 
 .issue-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 32px;
-  margin-top: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 0;
+}
+@media (max-width: 1200px) {
+  .issue-card-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .issue-card {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-  padding: 28px 24px 20px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  min-height: 260px;
+  transition: all 0.2s;
+}
+.issue-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: #d1d5db;
 }
 .issue-card-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 10px;
+  gap: 12px;
 }
-.issue-severity {
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 6px;
-  padding: 4px 12px;
-  text-transform: capitalize;
-  display: inline-block;
+.issue-id-title {
+  flex: 1;
 }
-.issue-severity.high { background: #fee2e2; color: #b91c1c; }
-.issue-severity.medium { background: #fef9c3; color: #b45309; }
-.issue-severity.low { background: #dbeafe; color: #1e40af; }
+.issue-id {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #9ca3af;
+  display: block;
+  margin-bottom: 8px;
+}
 .issue-title {
   font-size: 1.1rem;
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.4;
 }
-.issue-description {
-  color: #374151;
+.issue-severity {
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 4px 12px;
+  text-transform: capitalize;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.issue-severity.high { background: #fee2e2; color: #dc2626; }
+.issue-severity.medium { background: #fef3c7; color: #d97706; }
+.issue-severity.low { background: #dbeafe; color: #2563eb; }
+.issue-heuristic {
+  color: #9ca3af;
+  font-size: 0.8rem;
   margin-bottom: 12px;
-  font-size: 1rem;
+  font-weight: 400;
+}
+.issue-time {
+  color: #374151;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.issue-time .time-label {
+  font-weight: 600;
+}
+.issue-time .time-value {
+  font-weight: 400;
+}
+.issue-evidence {
+  color: #374151;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+.issue-evidence strong {
+  color: #111827;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 .issue-recommendations {
-  margin-bottom: 18px;
-  font-size: 0.98rem;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  flex: 1;
+}
+.issue-recommendations strong {
+  color: #111827;
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.issue-recommendations ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.issue-recommendations li {
+  margin-bottom: 4px;
+  color: #374151;
+  line-height: 1.6;
+  font-weight: 400;
 }
 .issue-card-actions {
   margin-top: auto;
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 .copy-btn, .jira-btn {
-  background: #f3f4f6;
-  border: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
-  padding: 7px 18px;
+  padding: 8px 14px;
   font-weight: 500;
   cursor: pointer;
-  color: #6366f1;
-  transition: background 0.2s;
+  color: #374151;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
 }
-.copy-btn:hover, .jira-btn:hover {
-  background: #e0e7ff;
+.copy-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+.jira-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
 }
 .issue-card-image {
   width: 100%;
@@ -530,6 +880,44 @@
 }
 .main-title { display: none; }
 
+/* Collapsible Section Styles */
+.collapsible-section {
+  overflow: hidden;
+}
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 0;
+}
+.collapsible-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.chevron-icon {
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+.collapsible-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+.collapsible-content.expanded {
+  max-height: 2000px;
+  opacity: 1;
+  padding-top: 12px;
+}
+.collapsible-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+}
+.user-goal-text {
+  margin: 0 0 12px 0;
+  font-size: 1.08rem;
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .analysis-body {
@@ -538,57 +926,59 @@
 
   .analysis-header {
     padding: 16px 20px 12px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
   }
 
-  .workflow-title {
-    font-size: 1.1rem;
-    margin-left: 12px;
-    max-width: 300px;
+  .header-left {
+    gap: 12px;
   }
 
-  .flow-timeline {
+  .report-title {
+    font-size: 1.4rem;
+  }
+
+  .header-right {
     width: 100%;
-    min-height: auto;
-    border-right: none;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 16px 20px;
-    position: static;
+    justify-content: flex-end;
   }
 
-  .flow-timeline h4 {
-    margin-left: 0;
-    margin-bottom: 12px;
+  .summary-stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 12px 20px;
+    gap: 10px;
   }
 
-  .timeline-steps {
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .stat-value {
+    font-size: 1.5rem;
   }
 
-  .timeline-step {
+  .timeline-bar-container {
+    padding: 10px 12px;
+  }
+
+  .timeline-heading {
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+  }
+
+  .timeline-ranges {
+    gap: 6px;
+  }
+
+  .timeline-range-btn {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+
+  .workflow-analysis-section {
+    padding: 10px 20px;
+  }
+
+  .workflow-toggle-btn {
     padding: 8px 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    min-width: 120px;
-    text-align: center;
-    max-width: none;
-  }
-
-  .timeline-step.selected {
-    background: #6366f1;
-    color: white;
-    border-color: #6366f1;
-  }
-
-  .step-time {
-    display: block;
-    margin-left: 0;
-    margin-top: 4px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 
   .analysis-main {
@@ -654,9 +1044,234 @@
     padding: 16px 12px;
   }
 }
+
+/* Severity Info Icon */
+.severity-info-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  color: #9ca3af;
+  transition: color 0.2s, transform 0.2s;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  width: 14px;
+  height: 14px;
+}
+
+.severity-info-icon:hover {
+  color: #6366f1;
+  transform: scale(1.15);
+}
+
+.severity-info-icon:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.severity-info-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Severity Modal */
+.severity-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.severity-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  position: relative;
+  padding: 32px;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.severity-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #9ca3af;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+  line-height: 1;
+}
+
+.severity-modal-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+#severityModalBody h2 {
+  margin: 0 0 24px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#severityModalBody .severity-icon {
+  font-size: 2rem;
+}
+
+#severityModalBody .severity-section {
+  margin-bottom: 24px;
+}
+
+#severityModalBody .severity-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+#severityModalBody .severity-section p {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+#severityModalBody .severity-examples {
+  background: #f9fafb;
+  border-left: 3px solid #e5e7eb;
+  padding: 12px 16px;
+  border-radius: 4px;
+}
+
+#severityModalBody .severity-examples ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+#severityModalBody .severity-examples li {
+  margin-bottom: 6px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+#severityModalBody .severity-timeline {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+#severityModalBody .severity-calculation {
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: #166534;
+  line-height: 1.6;
+}
+
+#severityModalBody .workflow-context {
+  background: #fef3c7;
+  border-left: 3px solid #f59e0b;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+
+#severityModalBody .workflow-context strong {
+  color: #92400e;
+}
+
+@media (max-width: 768px) {
+  .severity-modal-content {
+    width: 95%;
+    padding: 24px 20px;
+    max-height: 90vh;
+  }
+
+  #severityModalBody h2 {
+    font-size: 1.5rem;
+  }
+}
 </style>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
+// Toggle workflow details
+function toggleWorkflowDetails() {
+  const details = document.getElementById('workflow-details');
+  const chevron = document.querySelector('.chevron-workflow');
+
+  if (details.classList.contains('collapsed')) {
+    details.classList.remove('collapsed');
+    details.classList.add('expanded');
+    chevron.style.transform = 'rotate(180deg)';
+  } else {
+    details.classList.remove('expanded');
+    details.classList.add('collapsed');
+    chevron.style.transform = 'rotate(0deg)';
+  }
+}
+
+// Toggle collapsible sections
+function toggleCollapsible(headerElement) {
+  const content = headerElement.nextElementSibling;
+  const chevron = headerElement.querySelector('.chevron-icon');
+
+  if (content.classList.contains('expanded')) {
+    content.classList.remove('expanded');
+    content.classList.add('collapsed');
+    chevron.style.transform = 'rotate(-90deg)';
+  } else {
+    content.classList.remove('collapsed');
+    content.classList.add('expanded');
+    chevron.style.transform = 'rotate(0deg)';
+  }
+}
+
 // Tab switching logic
 const tabs = document.querySelectorAll('.tab');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -730,5 +1345,142 @@ function highlightCard(idx) {
     });
   }
 }
+
+// Severity Info Modal Functions
+function openSeverityInfo(severity) {
+  const modal = document.getElementById('severityModal');
+  const modalBody = document.getElementById('severityModalBody');
+
+  // Get workflow criticality if available
+  <% workflow_criticality = @audit.parsed_llm_response.dig('workflowSummary', 'workflowCriticality') if @audit.completed? || @audit.status == 'partial' %>
+  const workflowCriticality = '<%= workflow_criticality || 'Standard' %>';
+  const workflowTitle = '<%= @audit.parsed_llm_response.dig('workflowSummary', 'workflowtitle') if @audit.completed? || @audit.status == 'partial' %>';
+
+  const severityContent = {
+    high: {
+      icon: '🔴',
+      title: 'High Severity',
+      definition: 'This issue is actively preventing users from completing important tasks or causing significant frustration. It\'s costing you conversions, revenue, or users right now.',
+      examples: [
+        'Checkout button is hard to find → Users abandon their cart',
+        'Form errors don\'t clearly show what\'s wrong → Users give up',
+        'No confirmation after payment → Users panic and call support',
+        'Critical workflow blocked or severely impaired'
+      ],
+      timeline: '⚡ Fix this week',
+      calculation: 'High severity issues are identified based on <strong>critical user impact</strong>, <strong>task blocking</strong>, and <strong>workflow criticality</strong>. Issues in business-critical flows (like checkout or payment) automatically receive higher severity ratings.'
+    },
+    medium: {
+      icon: '🟡',
+      title: 'Medium Severity',
+      definition: 'This issue is making your product harder to use than it should be. Users can work around it, but they\'re annoyed. Some less patient users might leave.',
+      examples: [
+        'Search results are confusing → Users spend extra time finding what they need',
+        'Settings are hard to find → Users can\'t customize easily',
+        'Navigation labels are unclear → Users click multiple times',
+        'Form lacks helpful guidance or real-time validation'
+      ],
+      timeline: '📅 Fix this month',
+      calculation: 'Medium severity issues create <strong>noticeable friction</strong> but don\'t block task completion. Severity is adjusted based on workflow type - the same issue in settings gets Medium severity, while in checkout it would be High.'
+    },
+    low: {
+      icon: '🔵',
+      title: 'Low Severity',
+      definition: 'This is a polish issue. Users can complete all tasks fine, but fixing this would make your product feel more professional or slightly smoother.',
+      examples: [
+        'Inconsistent button spacing in footer',
+        'A label could be clearer but users figure it out',
+        'Animation timing feels slightly off',
+        'Minor visual inconsistencies that don\'t affect usability'
+      ],
+      timeline: '🎨 Fix when you have time',
+      calculation: 'Low severity issues are <strong>cosmetic or minor polish items</strong>. They don\'t significantly impact user experience. Issues in low-impact workflows (like help pages) typically receive Low severity ratings unless they block critical tasks.'
+    }
+  };
+
+  const content = severityContent[severity];
+  if (!content) return;
+
+  let workflowContextHTML = '';
+  if (workflowCriticality && workflowTitle) {
+    const criticalityDescriptions = {
+      'Business-Critical': 'Business-Critical workflows (checkout, payment, signup, login) receive the highest severity ratings because issues here directly impact revenue and core business functions.',
+      'High-Impact': 'High-Impact workflows (onboarding, core features, search) are essential to user success, so issues receive elevated severity ratings.',
+      'Standard': 'Standard workflows (settings, profile, preferences) receive baseline severity ratings since issues here are less likely to block critical tasks.',
+      'Low-Impact': 'Low-Impact workflows (help pages, about pages) receive lower severity ratings since these areas are less critical to core user tasks.'
+    };
+
+    workflowContextHTML = `
+      <div class="workflow-context">
+        <strong>Your Workflow:</strong> "${workflowTitle}" was classified as <strong>${workflowCriticality}</strong>.<br>
+        ${criticalityDescriptions[workflowCriticality] || ''}
+      </div>
+    `;
+  }
+
+  modalBody.innerHTML = `
+    <h2>
+      <span class="severity-icon">${content.icon}</span>
+      ${content.title}
+    </h2>
+
+    <div class="severity-section">
+      <h3>What it means</h3>
+      <p>${content.definition}</p>
+    </div>
+
+    <div class="severity-section">
+      <h3>Examples</h3>
+      <div class="severity-examples">
+        <ul>
+          ${content.examples.map(ex => `<li>${ex}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+
+    <div class="severity-section">
+      <h3>When to fix</h3>
+      <div class="severity-timeline">${content.timeline}</div>
+    </div>
+
+    <div class="severity-section">
+      <h3>How it's calculated</h3>
+      <div class="severity-calculation">
+        ${content.calculation}
+      </div>
+      ${workflowContextHTML}
+    </div>
+  `;
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Track modal open event
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'severity_info_opened', {
+      event_category: 'engagement',
+      severity: severity,
+      audit_id: <%= @audit.id %>
+    });
+  }
+}
+
+function closeSeverityModal(event) {
+  // If event is passed and target is not the backdrop, don't close
+  if (event && event.target.classList.contains('severity-modal-content')) {
+    return;
+  }
+
+  const modal = document.getElementById('severityModal');
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeSeverityModal();
+  }
+});
 </script>
 <% end %>

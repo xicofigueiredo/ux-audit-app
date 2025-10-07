@@ -37,9 +37,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_04_160834) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-# Could not dump table "ux_knowledge_documents" because of following StandardError
-#   Unknown type 'vector(1536)' for column 'embedding'
-
   create_table "video_audits", force: :cascade do |t|
     t.string "video"
     t.string "status", default: "pending"

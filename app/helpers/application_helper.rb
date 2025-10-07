@@ -15,4 +15,72 @@ module ApplicationHelper
     end
     nil
   end
+
+  # Generate formatted issue ID (e.g., UXW-042-001)
+  def generate_issue_id(audit_id, index)
+    "UXW-#{audit_id.to_s.rjust(3, '0')}-#{(index + 1).to_s.rjust(3, '0')}"
+  end
+
+  # Extract Nielsen heuristic number from heuristic name
+  def extract_heuristic_label(heuristic_violated)
+    return "General UX Principle" if heuristic_violated.blank?
+
+    heuristic_map = {
+      "Visibility of system status" => "Nielsen #1 Visibility",
+      "Match between system and real world" => "Nielsen #2 Match with real world",
+      "User control and freedom" => "Nielsen #3 User control and freedom",
+      "Consistency and standards" => "Nielsen #4 Consistency and standards",
+      "Error prevention" => "Nielsen #5 Error prevention",
+      "Recognition rather than recall" => "Nielsen #6 Recognition rather than recall",
+      "Flexibility and efficiency of use" => "Nielsen #7 Flexibility and efficiency",
+      "Aesthetic and minimalist design" => "Nielsen #8 Aesthetic and minimalist design",
+      "Help users recognize, diagnose, and recover from errors" => "Nielsen #9 Error recovery",
+      "Help and documentation" => "Nielsen #10 Help and documentation"
+    }
+
+    heuristic_map[heuristic_violated] || "Heuristic: #{heuristic_violated}"
+  end
+
+  # Calculate severity statistics from issues array
+  def calculate_severity_stats(issues)
+    return { total: 0, high: 0, medium: 0, low: 0 } if issues.blank?
+
+    stats = { total: issues.length, high: 0, medium: 0, low: 0 }
+
+    issues.each do |issue|
+      severity = issue["severity"]&.downcase
+      case severity
+      when "high"
+        stats[:high] += 1
+      when "medium"
+        stats[:medium] += 1
+      when "low"
+        stats[:low] += 1
+      end
+    end
+
+    stats
+  end
+
+  # Extract concise evidence snippet from issue description
+  def extract_evidence(issue_description)
+    return "" if issue_description.blank?
+
+    # Remove heuristic prefix patterns if present
+    text = issue_description
+      .gsub(/^This violates.*?\.\s*/i, '')                                    # "This violates the principle of X."
+      .gsub(/^This conflicts with Nielsen's Heuristic #\d+.*?\.\s*/i, '')    # "This conflicts with Nielsen's Heuristic #1..."
+      .gsub(/^Nielsen's Heuristic #\d+.*?\.\s*/i, '')                        # "Nielsen's Heuristic #1..."
+      .gsub(/^Heuristic violated:.*?\.\s*/i, '')                             # "Heuristic violated: X."
+      .strip
+
+    # Get first sentence or first ~120 characters
+    first_sentence = text.split(/\.\s+/).first
+
+    if first_sentence && first_sentence.length > 120
+      truncate(first_sentence, length: 120, separator: ' ')
+    else
+      first_sentence
+    end
+  end
 end
