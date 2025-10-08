@@ -1,0 +1,3435 @@
+<%# app/views/video_audits/show.html.erb %>
+
+<% if @audit.status == 'pending' %>
+  <div class="analysis-app-container" style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem;">
+    <div style="text-align: center; max-width: 600px;">
+      <!-- Progress bar -->
+      <div class="progress-container" style="width: 100%; max-width: 400px; margin: 0 auto 2rem;">
+        <div class="progress-bar" style="width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+          <div class="progress-fill" style="height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 4px; transition: width 0.5s ease; width: <%= case @audit.processing_stage
+            when 'uploaded' then '10%'
+            when 'extracting_frames' then '30%'
+            when 'analyzing_ai' then '70%'
+            when 'generating_report' then '90%'
+            else '50%'
+          end %>;"></div>
+        </div>
+        <div class="progress-stages" style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem; color: #6b7280;">
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if ['uploaded', 'extracting_frames', 'analyzing_ai', 'generating_report'].include?(@audit.processing_stage) %>">Upload</span>
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if ['extracting_frames', 'analyzing_ai', 'generating_report'].include?(@audit.processing_stage) %>">Extract</span>
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if ['analyzing_ai', 'generating_report'].include?(@audit.processing_stage) %>">Analyze</span>
+          <span style="<%= 'color: #6366f1; font-weight: 600;' if @audit.processing_stage == 'generating_report' %>">Report</span>
+        </div>
+      </div>
+
+      <!-- Animated spinner -->
+      <div class="spinner" style="margin-bottom: 24px; width: 48px; height: 48px; border: 6px solid #e5e7eb; border-top: 6px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+
+      <!-- Dynamic status message -->
+      <h2 id="status-message" style="font-size: 1.5rem; color: #6366f1; font-weight: 700; margin-bottom: 12px;"><%= @audit.processing_stage_message %></h2>
+
+      <!-- Time remaining estimate -->
+      <p id="time-estimate" style="color: #374151; font-size: 1.1rem; margin-bottom: 1rem;"><%= @audit.estimated_time_remaining %></p>
+
+      <!-- Helpful tip -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-top: 1.5rem;">
+        <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
+          💡 <strong>Pro tip:</strong> Keep this page open for the best experience. We'll automatically show your results when ready!
+        </p>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Poll every 3 seconds to check if the audit is complete and update progress
+    const pollInterval = setInterval(function() {
+      fetch(window.location.pathname + '.json')
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'completed') {
+            clearInterval(pollInterval);
+            window.location.reload();
+          } else if (data.status === 'failed') {
+            clearInterval(pollInterval);
+            window.location.reload();
+          }
+
+          // Update progress if we get processing stage info
+          if (data.processing_stage) {
+            updateProgress(data.processing_stage);
+          }
+        })
+        .catch(error => {
+          console.log('Polling error:', error);
+          // Continue polling even if there's an error
+        });
+    }, 3000);
+
+    function updateProgress(stage) {
+      const progressFill = document.querySelector('.progress-fill');
+      const statusMessage = document.getElementById('status-message');
+      const timeEstimate = document.getElementById('time-estimate');
+
+      const stages = {
+        'uploaded': { width: '10%', message: 'Video uploaded successfully', time: '1-2 minutes remaining' },
+        'extracting_frames': { width: '30%', message: 'Extracting frames from video...', time: '1-2 minutes remaining' },
+        'analyzing_ai': { width: '70%', message: 'Analyzing workflow with AI...', time: '30-60 seconds remaining' },
+        'generating_report': { width: '90%', message: 'Generating your UX report...', time: 'Almost done!' }
+      };
+
+      if (stages[stage]) {
+        progressFill.style.width = stages[stage].width;
+        statusMessage.textContent = stages[stage].message;
+        timeEstimate.textContent = stages[stage].time;
+      }
+    }
+  </script>
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .progress-container {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+<% else %>
+<div class="analysis-app-container">
+  <!-- Header -->
+  <header class="analysis-header">
+    <div class="header-left">
+      <a href="/" class="back-link">&larr; Back</a>
+      <span class="workflow-title">
+        <%
+          llm = @audit.parsed_llm_response
+          short_title = nil
+          user_goal = nil
+
+          if llm.present?
+            if llm.is_a?(String) && llm.strip.start_with?('{')
+              begin
+                llm = JSON.parse(llm)
+              rescue JSON::ParserError
+                llm = {}
+              end
+            end
+            if llm.is_a?(Hash)
+              short_title = llm.dig('workflowSummary', 'workflowtitle')
+              user_goal = llm.dig('workflowSummary', 'userGoal')
+            end
+          end
+        %>
+        <% if short_title.present? %>
+          <%= short_title %>
+        <% elsif user_goal.present? %>
+          <%= truncate(user_goal, length: 40) %>
+        <% else %>
+          <%= @audit.status.capitalize %>
+        <% end %>
+      </span>
+    </div>
+  </header>
+
+  <!-- Executive Summary Bar -->
+  <% if @audit.completed? && @summary_stats %>
+    <div class="executive-summary-bar">
+      <div class="summary-metrics">
+        <!-- Total Issues -->
+        <div class="metric-group">
+          <div class="metric-value"><%= @summary_stats[:total_issues] %></div>
+          <div class="metric-label">Total Issues</div>
+        </div>
+
+        <!-- Severity Breakdown -->
+        <div class="metric-group severity-breakdown">
+          <div class="severity-badges">
+            <span class="severity-badge <%= severity_badge_class('high') %>">
+              <%= severity_icon('high') %> <%= @summary_stats[:high_count] %>
+            </span>
+            <span class="severity-badge <%= severity_badge_class('medium') %>">
+              <%= severity_icon('medium') %> <%= @summary_stats[:medium_count] %>
+            </span>
+            <span class="severity-badge <%= severity_badge_class('low') %>">
+              <%= severity_icon('low') %> <%= @summary_stats[:low_count] %>
+            </span>
+          </div>
+          <div class="metric-label">High / Med / Low</div>
+        </div>
+
+        <!-- Affected Steps -->
+        <div class="metric-group">
+          <div class="metric-value"><%= @summary_stats[:affected_steps].size %></div>
+          <div class="metric-label">Affected Steps</div>
+        </div>
+
+        <!-- Estimated Effort -->
+        <div class="metric-group">
+          <div class="effort-badge <%= tshirt_size_class(@summary_stats[:estimated_effort]) %>">
+            <%= @summary_stats[:estimated_effort] %>
+          </div>
+          <div class="metric-label">Est. Effort</div>
+        </div>
+
+        <!-- Top Issues Preview -->
+        <div class="metric-group top-issues-preview" title="<%= (@summary_stats[:top_issues] || []).map { |issue| issue["painPointTitle"] }.join(', ') %>">
+          <div class="metric-value"><%= (@summary_stats[:top_issues] || []).size %></div>
+          <div class="metric-label">Top Issues</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="summary-actions">
+        <button class="btn btn-outline-primary btn-sm" data-action="export-pdf">
+          📄 Export PDF
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" data-action="export-csv">
+          📊 Export CSV
+        </button>
+        <button class="btn btn-outline-info btn-sm" data-action="export-json">
+          📋 Export JSON
+        </button>
+        <button class="btn btn-warning btn-sm" data-action="create-jira-epic">
+          🎫 Create Jira Epic (Top 5)
+        </button>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Filter Toolbar -->
+  <% if @audit.completed? && @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
+    <div class="filter-toolbar">
+      <div class="filter-section">
+        <!-- Severity Filters -->
+        <div class="filter-group" role="group" aria-labelledby="severity-label">
+          <label id="severity-label" class="filter-label">Severity:</label>
+          <div class="filter-chips" data-filter-type="severity" role="radiogroup" aria-labelledby="severity-label">
+            <button class="filter-chip active" data-filter-value="all" aria-pressed="true" role="radio" aria-checked="true" tabindex="0">All</button>
+            <button class="filter-chip" data-filter-value="high" aria-pressed="false" role="radio" aria-checked="false" tabindex="-1">High</button>
+            <button class="filter-chip" data-filter-value="medium" aria-pressed="false" role="radio" aria-checked="false" tabindex="-1">Medium</button>
+            <button class="filter-chip" data-filter-value="low" aria-pressed="false" role="radio" aria-checked="false" tabindex="-1">Low</button>
+          </div>
+        </div>
+
+        <!-- Heuristic Filters -->
+        <div class="filter-group" role="group" aria-labelledby="heuristic-label">
+          <label id="heuristic-label" class="filter-label">Heuristic:</label>
+          <div class="filter-chips" data-filter-type="heuristic" id="heuristic-filters" role="radiogroup" aria-labelledby="heuristic-label">
+            <button class="filter-chip active" data-filter-value="all" aria-pressed="true" role="radio" aria-checked="true" tabindex="0">All</button>
+            <!-- Dynamic heuristic chips will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Component Filters -->
+        <div class="filter-group" role="group" aria-labelledby="component-label">
+          <label id="component-label" class="filter-label">Component:</label>
+          <div class="filter-chips" data-filter-type="component" id="component-filters" role="radiogroup" aria-labelledby="component-label">
+            <button class="filter-chip active" data-filter-value="all" aria-pressed="true" role="radio" aria-checked="true" tabindex="0">All</button>
+            <!-- Dynamic component chips will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <div class="view-controls">
+        <!-- Search Box -->
+        <div class="search-group">
+          <label for="issue-search" class="sr-only">Search issues</label>
+          <input type="text" id="issue-search" placeholder="Search issues..." class="search-input"
+                 aria-describedby="search-help" autocomplete="off" spellcheck="false">
+          <div id="search-help" class="sr-only">Search across issue titles, descriptions, and components</div>
+        </div>
+
+        <!-- Sort Dropdown -->
+        <div class="sort-group">
+          <label for="sort-select" class="sort-label">Sort by:</label>
+          <select id="sort-select" class="sort-select" aria-describedby="sort-help">
+            <option value="time">Time (original order)</option>
+            <option value="severity">Severity (high to low)</option>
+            <option value="title">Title (A to Z)</option>
+          </select>
+          <div id="sort-help" class="sr-only">Choose how to order the filtered issues</div>
+        </div>
+
+        <!-- Results Counter -->
+        <div class="results-counter" id="results-counter" aria-live="polite" aria-atomic="true">
+          Showing <span id="visible-count">0</span> of <span id="total-count">0</span> issues
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="analysis-body">
+    <!-- Sidebar Timeline -->
+    <aside class="flow-timeline">
+      <h4>Flow Timeline</h4>
+      <ul class="timeline-steps">
+        <li class="timeline-step all-steps selected" onclick="highlightCard('all')">All Steps</li>
+        <% if @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
+          <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
+            <li class="timeline-step" data-anchor="<%= issue_anchor_id(idx) %>" onclick="highlightCard(<%= idx %>)">
+              <div class="step-content">
+                <span class="step-title"><%= issue["painPointTitle"] %></span>
+                <a href="#<%= issue_anchor_id(idx) %>" class="step-anchor-link" title="Link to this issue" onclick="event.stopPropagation()">🔗</a>
+              </div>
+              <% if issue["frameReference"] %>
+                <span class="step-time"><%= frame_range_to_time(issue["frameReference"]) %></span>
+              <% end %>
+            </li>
+          <% end %>
+        <% end %>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="analysis-main">
+      <% if @audit.parsed_llm_response.dig('workflowSummary') %>
+        <div class="main-summary-card full-width">
+          <h3>User Goal</h3>
+          <p><%= @audit.parsed_llm_response.dig('workflowSummary', 'userGoal') %></p>
+          <% if @audit.parsed_llm_response['workflowSummary']['workflowSteps'].is_a?(Array) %>
+            <h4>Workflow Steps</h4>
+            <ol class="workflow-steps-list">
+              <% @audit.parsed_llm_response['workflowSummary']['workflowSteps'].each do |step| %>
+                <% clean_step = step.gsub(/^\d+\.\s*/, '') %>
+                <li><%= clean_step %></li>
+              <% end %>
+            </ol>
+          <% end %>
+        </div>
+      <% end %>
+      <div class="tab-content overview-tab active">
+        <% if @audit.completed? || @audit.status == 'partial' %>
+          <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
+            <div class="issue-card-grid">
+              <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
+                <div class="issue-card" id="<%= issue_anchor_id(idx) %>"
+                     data-severity="<%= issue["severity"]&.downcase || 'low' %>"
+                     data-component="<%= extract_component(issue).downcase %>"
+                     data-heuristic="<%= extract_heuristic(issue).downcase.gsub(/\s+/, '-') %>">
+                  <!-- Enhanced Issue Header -->
+                  <div class="issue-card-header">
+                    <div class="issue-id-row">
+                      <span class="issue-id">[<%= @audit.issue_id_for_index(idx) %>]</span>
+                      <span class="issue-component"><%= extract_component(issue) %></span>
+                      <a href="#<%= issue_anchor_id(idx) %>" class="anchor-link"
+                         title="Copy link to this issue"
+                         onclick="event.preventDefault(); DeepLinkManager.copyLinkToClipboard('<%= issue_anchor_id(idx) %>')"
+                         aria-label="Copy link to issue <%= @audit.issue_id_for_index(idx) %>">🔗</a>
+                    </div>
+                    <h4 class="issue-title"><%= extract_component(issue) %> — <%= issue["painPointTitle"] %></h4>
+                  </div>
+
+                  <!-- Enhanced Badges Row -->
+                  <div class="badges-row" role="group" aria-label="Issue attributes">
+                    <span class="issue-severity badge <%= severity_badge_class(issue["severity"]) %>"
+                          role="status" aria-label="Severity: <%= issue["severity"]&.capitalize || 'Unknown' %>">
+                      <%= severity_icon(issue["severity"]) %> <%= issue["severity"]&.capitalize || 'Unknown' %>
+                    </span>
+                    <span class="issue-frequency badge <%= frequency_badge_class(estimate_frequency(issue)) %>"
+                          role="status" aria-label="Frequency: <%= estimate_frequency(issue) %>">
+                      📊 <%= estimate_frequency(issue) %>
+                    </span>
+                    <span class="issue-confidence badge <%= confidence_badge_class(estimate_confidence(issue)) %>"
+                          role="status" aria-label="Confidence: <%= estimate_confidence(issue) %>">
+                      🎯 <%= estimate_confidence(issue) %>
+                    </span>
+                    <a href="#" class="issue-heuristic badge <%= heuristic_badge_class %>"
+                       title="Learn more about <%= extract_heuristic(issue) %>"
+                       aria-label="Heuristic: <%= extract_heuristic(issue) %>">
+                      📚 <%= extract_heuristic(issue) %>
+                    </a>
+                  </div>
+
+                  <!-- Enhanced Timestamp Section -->
+                  <div class="timestamp-section">
+                    <span class="timestamp-label">Time:</span>
+                    <button class="timestamp-link"
+                            onclick="openVideoClip('<%= issue_anchor_id(idx) %>')"
+                            title="Click to open video clip"
+                            aria-label="Open video clip at timestamp <%= extract_timestamp(issue) %>">
+                      <code><%= extract_timestamp(issue) %></code> → Click to open clip
+                    </button>
+                  </div>
+
+                  <!-- Evidence Section -->
+                  <% if has_evidence?(issue) %>
+                    <div class="evidence-section">
+                      <div class="evidence-header">
+                        <span class="evidence-label">Evidence:</span>
+                        <span class="evidence-count">(<%= evidence_count(issue) %> item<%= evidence_count(issue) == 1 ? '' : 's' %>)</span>
+                      </div>
+                      <div class="evidence-thumbnails">
+                        <% if issue["frameReference"].present? %>
+                          <div class="evidence-thumbnail frame-reference"
+                               title="Frame reference: <%= issue["frameReference"] %>">
+                            <div class="thumbnail-placeholder">
+                              📸
+                              <span class="thumbnail-label">Frame</span>
+                            </div>
+                          </div>
+                        <% end %>
+                        <% if issue["thumbnail"].present? %>
+                          <div class="evidence-thumbnail thumbnail-image">
+                            <img src="<%= issue["thumbnail"] %>" alt="Evidence thumbnail" />
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="evidence-section">
+                      <div class="evidence-placeholder">
+                        <span class="placeholder-icon">📋</span>
+                        <span class="placeholder-text">No visual evidence available</span>
+                      </div>
+                    </div>
+                  <% end %>
+                  <!-- Issue Description with Progressive Disclosure -->
+                  <div class="issue-description-section">
+                    <div class="description-summary">
+                      <%= truncate(issue["issueDescription"], length: 120) %>
+                      <% if issue["issueDescription"]&.length.to_i > 120 %>
+                        <button class="show-more-btn"
+                                onclick="toggleDescription(this)"
+                                aria-expanded="false"
+                                aria-controls="description-<%= idx %>"
+                                aria-label="Show more description">Show more</button>
+                      <% end %>
+                    </div>
+                    <% if issue["issueDescription"]&.length.to_i > 120 %>
+                      <div class="description-full" id="description-<%= idx %>" aria-hidden="true">
+                        <%= issue["issueDescription"] %>
+                        <button class="show-less-btn"
+                                onclick="toggleDescription(this)"
+                                aria-expanded="true"
+                                aria-controls="description-<%= idx %>"
+                                aria-label="Show less description">Show less</button>
+                      </div>
+                    <% end %>
+                  </div>
+                  <!-- Recommendations with Progressive Disclosure -->
+                  <div class="recommendations-section">
+                    <div class="recommendations-header">
+                      <strong>Recommendations:</strong>
+                      <button class="toggle-recommendations-btn"
+                              onclick="toggleRecommendations(this)"
+                              aria-expanded="false"
+                              aria-controls="recommendations-<%= idx %>"
+                              aria-label="Toggle recommendations display">
+                        <span class="toggle-icon">▶</span>
+                      </button>
+                    </div>
+                    <div class="recommendations-content" id="recommendations-<%= idx %>" aria-hidden="true">
+                      <ul role="list">
+                        <% (issue["recommendations"] || []).each do |rec| %>
+                          <li role="listitem"><%= rec %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  </div>
+                  <!-- Enhanced Action Buttons -->
+                  <div class="issue-card-actions" role="group" aria-label="Issue actions">
+                    <button class="action-btn copy-btn"
+                            onclick="copyIssueEnhanced(<%= @audit.id %>, <%= idx %>)"
+                            aria-label="Copy issue details in markdown format"
+                            title="Copy issue details">
+                      📋 Copy
+                    </button>
+                    <button class="action-btn jira-btn"
+                            onclick="createJiraTicket(<%= @audit.id %>, <%= idx %>)"
+                            aria-label="Create Jira ticket for this issue"
+                            title="Create Jira ticket">
+                      🎫 Create Jira
+                    </button>
+                    <button class="action-btn resolve-btn"
+                            onclick="markAsResolved(<%= idx %>)"
+                            aria-label="Mark this issue as resolved"
+                            title="Mark as resolved"
+                            data-resolved="false">
+                      ✅ Mark Resolved
+                    </button>
+                    <button class="action-btn evidence-btn"
+                            onclick="viewEvidence(<%= idx %>)"
+                            aria-label="View evidence for this issue"
+                            title="View evidence">
+                      🔍 View Evidence
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="error-message">
+              Invalid analysis format. Please try again.
+            </div>
+          <% end %>
+        <% elsif @audit.failed? %>
+          <div class="error-container" style="text-align: center; padding: 3rem 2rem; max-width: 600px; margin: 0 auto;">
+            <!-- Error icon -->
+            <div style="margin-bottom: 1.5rem;">
+              <svg style="width: 64px; height: 64px; color: #ef4444; margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+
+            <!-- Error message -->
+            <h3 style="font-size: 1.5rem; font-weight: 700; color: #dc2626; margin-bottom: 1rem;">
+              Oops! Something went wrong
+            </h3>
+
+            <div class="error-message" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+              <p style="color: #7f1d1d; font-size: 1rem; margin: 0; line-height: 1.5;">
+                <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["error"] %>
+                  <%= @audit.parsed_llm_response["error"] %>
+                <% else %>
+                  <%= @audit.parsed_llm_response %>
+                <% end %>
+              </p>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="error-actions" style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+              <%= button_to video_audits_path, method: :post, params: { video_audit: { video: @audit.video } },
+                    class: "retry-button",
+                    style: "background: #6366f1; color: white; border: none; border-radius: 8px; padding: 12px 24px; font-weight: 600; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 8px; text-decoration: none;" do %>
+                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Try Again
+              <% end %>
+
+              <%= link_to video_audits_path,
+                    class: "secondary-button",
+                    style: "color: #6b7280; text-decoration: none; padding: 8px 16px; border-radius: 6px; transition: background 0.2s;" do %>
+                ← Upload a different video
+              <% end %>
+            </div>
+
+            <!-- Help text -->
+            <div style="margin-top: 2rem; padding: 1rem; background: #f8fafc; border-radius: 6px;">
+              <p style="color: #64748b; font-size: 0.9rem; margin: 0;">
+                💡 <strong>Having trouble?</strong> Make sure your video is under 90 seconds and in a supported format (MP4, MOV, AVI).
+              </p>
+            </div>
+          </div>
+        <% else %>
+          <div class="processing">
+            <div class="spinner"></div>
+            <p>Processing video analysis...</p>
+          </div>
+        <% end %>
+      </div>
+    </main>
+  </div>
+</div>
+
+<style>
+.analysis-app-container {
+  font-family: 'Inter', sans-serif;
+  background: #f9fafb;
+  min-height: 100vh;
+}
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px 16px 40px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.header-left { display: flex; align-items: center; gap: 18px; }
+.back-link { color: #6366f1; text-decoration: none; font-weight: 500; }
+.workflow-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-left: 18px;
+  max-width: 700px;
+  white-space: pre-line;
+}
+.project-title { font-size: 1.5rem; font-weight: 600; margin: 0; }
+.analyzed-time { color: #6b7280; font-size: 0.95rem; margin-left: 8px; }
+.header-center { display: flex; align-items: center; gap: 8px; }
+.ux-score-label { color: #6b7280; font-size: 0.9rem; }
+.ux-score-value { color: #6366f1; font-size: 2rem; font-weight: 700; }
+.ux-score-circle { width: 36px; height: 36px; border: 3px solid #6366f1; border-radius: 50%; display: inline-block; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.export-btn, .share-btn { background: #f3f4f6; border: none; border-radius: 6px; padding: 8px 16px; font-weight: 500; cursor: pointer; }
+.export-btn:hover, .share-btn:hover { background: #e0e7ff; }
+.user-info { background: #ede9fe; color: #7c3aed; padding: 6px 14px; border-radius: 20px; font-weight: 500; }
+
+/* Executive Summary Bar */
+.executive-summary-bar {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.summary-metrics {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.metric-group {
+  text-align: center;
+  min-width: 80px;
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.severity-badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+  justify-content: center;
+}
+
+.severity-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-danger { background: #fef2f2; color: #dc2626; }
+.badge-warning { background: #fffbeb; color: #d97706; }
+.badge-info { background: #eff6ff; color: #2563eb; }
+.badge-secondary { background: #f1f5f9; color: #64748b; }
+
+.effort-badge {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.badge-success { background: #dcfce7; color: #16a34a; }
+.badge-orange { background: #fed7aa; color: #ea580c; }
+.badge-purple { background: #f3e8ff; color: #9333ea; }
+
+.top-issues-preview {
+  cursor: help;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.summary-actions .btn {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.summary-actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Enhanced Issue Cards */
+.issue-id-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.issue-id {
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.issue-component {
+  background: #ede9fe;
+  color: #7c3aed;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.anchor-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.9rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.anchor-link:hover {
+  opacity: 1;
+  color: #6366f1;
+}
+
+.issue-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.issue-title-row h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+}
+
+.clip-link {
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.clip-link:hover {
+  text-decoration: underline;
+}
+
+/* CSS Custom Properties for Dynamic Positioning */
+:root {
+  --executive-summary-height: 100px;
+  --filter-toolbar-top: 100px;
+}
+
+/* Filter Toolbar */
+.filter-toolbar {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: var(--filter-toolbar-top);
+  z-index: 90;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-section {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.filter-chip.active {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+
+.view-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.search-group {
+  position: relative;
+}
+
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  width: 200px;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.sort-select {
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.results-counter {
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Screen Reader Only Content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus Indicators for Accessibility */
+.filter-chip:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.search-input:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.sort-select:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .filter-chip {
+    border-width: 2px;
+  }
+
+  .filter-chip.active {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+  }
+
+  .search-input, .sort-select {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .filter-chip {
+    transition: none;
+  }
+
+  .search-input {
+    transition: none;
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .filter-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 20px;
+    position: static; /* Remove sticky on mobile */
+  }
+
+  .filter-section {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .filter-chips {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .view-controls {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .executive-summary-bar {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 20px;
+  }
+
+  .summary-metrics {
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+  }
+
+  .summary-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .issue-id-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .issue-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+.analysis-body {
+  display: flex;
+  align-items: flex-start;
+}
+.flow-timeline {
+  width: 260px; /* increased from 220px */
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  padding: 32px 0 0 0;
+  min-height: calc(100vh - 72px);
+  /* 72px header height */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+}
+.flow-timeline h4 { margin-left: 32px; color: #374151; font-size: 1.1rem; font-weight: 600; }
+.timeline-steps { list-style: none; padding: 0 0 0 32px; margin: 24px 0 0 0; }
+.timeline-step {
+  padding: 10px 0;
+  color: #374151;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 6px;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.3;
+  max-width: 200px;
+}
+.timeline-step.selected, .timeline-step:hover { background: #f3f4f6; font-weight: 600; }
+.timeline-step.auto-highlighted {
+  background: #eff6ff;
+  border-left: 3px solid #6366f1;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.step-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.step-title { flex: 1; }
+.step-anchor-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  margin-left: 8px;
+}
+.step-anchor-link:hover {
+  opacity: 1;
+  color: #6366f1;
+}
+.step-time { color: #6b7280; font-size: 0.95rem; margin-left: 12px; }
+
+.analysis-main { flex: 1; padding: 40px 48px; }
+.tabs { display: flex; gap: 16px; margin-bottom: 24px; }
+.tab { background: #f3f4f6; border: none; border-radius: 6px 6px 0 0; padding: 10px 24px; font-weight: 500; cursor: pointer; color: #6b7280; }
+.tab.active { background: #fff; color: #6366f1; border-bottom: 2px solid #6366f1; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.issue-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 32px;
+  margin-top: 24px;
+}
+.issue-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  padding: 28px 24px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 260px;
+}
+.issue-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.issue-severity {
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 12px;
+  text-transform: capitalize;
+  display: inline-block;
+}
+.issue-severity.high { background: #fee2e2; color: #b91c1c; }
+.issue-severity.medium { background: #fef9c3; color: #b45309; }
+.issue-severity.low { background: #dbeafe; color: #1e40af; }
+.issue-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+.issue-description {
+  color: #374151;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+.issue-recommendations {
+  margin-bottom: 18px;
+  font-size: 0.98rem;
+}
+.issue-card-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+}
+.copy-btn, .jira-btn {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 18px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #6366f1;
+  transition: background 0.2s;
+}
+.copy-btn:hover, .jira-btn:hover {
+  background: #e0e7ff;
+}
+.issue-card-image {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  background: #f3f4f6;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+.frame-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+.frame-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a1a1aa;
+  font-size: 2.5rem;
+  background: #e5e7eb;
+}
+.placeholder-icon {
+  font-size: 2.5rem;
+}
+.issue-card.highlighted {
+  border: 2px solid #6366f1;
+  box-shadow: 0 0 0 2px #6366f1;
+}
+
+/* Flash highlight effect for direct links */
+.issue-card.flash-highlight {
+  animation: flashHighlight 1.5s ease-out;
+}
+
+@keyframes flashHighlight {
+  0% {
+    background-color: #fef3c7;
+    transform: scale(1.02);
+  }
+  50% {
+    background-color: #fed7aa;
+  }
+  100% {
+    background-color: #fff;
+    transform: scale(1);
+  }
+}
+.issue-timestamp {
+  font-size: 0.98rem;
+  color: #6366f1;
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.timestamp-label {
+  color: #6b7280;
+  font-size: 0.97rem;
+  font-weight: 400;
+}
+.timestamp-value {
+  font-family: monospace;
+  background: #f3f4f6;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.summary-card {
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 18px 18px 12px 18px;
+  margin: 0 0 18px 24px;
+  box-shadow: 0 1px 4px rgba(99,102,241,0.06);
+}
+.summary-card h4 {
+  margin: 0 0 6px 0;
+  font-size: 1.08rem;
+  color: #6366f1;
+  font-weight: 700;
+}
+.summary-card p {
+  margin: 0;
+  color: #374151;
+  font-size: 0.98rem;
+}
+.main-summary-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 32px 18px 32px;
+  margin: 0 auto 32px auto;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.07);
+  max-width: 700px;
+  position: relative;
+}
+.main-summary-card h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.15rem;
+  color: #6366f1;
+  font-weight: 700;
+}
+.main-summary-card h4 {
+  margin: 18px 0 6px 0;
+  font-size: 1.05rem;
+  color: #6366f1;
+  font-weight: 600;
+}
+.main-summary-card p {
+  margin: 0;
+  color: #374151;
+  font-size: 1.08rem;
+}
+.workflow-steps-list {
+  margin: 0 0 0 18px;
+  padding: 0;
+  color: #374151;
+  font-size: 1rem;
+}
+.workflow-steps-list li {
+  margin-bottom: 4px;
+  list-style: disc;
+}
+.main-summary-card.full-width {
+  max-width: none;
+  width: 100%;
+  margin: 0 0 32px 0;
+  box-sizing: border-box;
+}
+.main-title { display: none; }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .analysis-body {
+    flex-direction: column;
+  }
+
+  .analysis-header {
+    padding: 16px 20px 12px 20px;
+  }
+
+  .workflow-title {
+    font-size: 1.1rem;
+    margin-left: 12px;
+    max-width: 300px;
+  }
+
+  .flow-timeline {
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 20px;
+    position: static;
+  }
+
+  .flow-timeline h4 {
+    margin-left: 0;
+    margin-bottom: 12px;
+  }
+
+  .timeline-steps {
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .timeline-step {
+    padding: 8px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    min-width: 120px;
+    text-align: center;
+    max-width: none;
+  }
+
+  .timeline-step.selected {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+  }
+
+  .step-time {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+    font-size: 0.8rem;
+  }
+
+  .analysis-main {
+    padding: 20px 16px;
+  }
+
+  .main-summary-card {
+    padding: 20px 16px;
+    margin-bottom: 24px;
+  }
+
+  .issue-card-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .issue-card {
+    padding: 20px 16px;
+  }
+
+  .error-container {
+    padding: 2rem 1rem !important;
+  }
+
+  .error-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .retry-button,
+  .secondary-button {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-header {
+    padding: 12px 16px 8px 16px;
+  }
+
+  .workflow-title {
+    font-size: 1rem;
+    margin-left: 8px;
+    max-width: 250px;
+  }
+
+  .timeline-step {
+    min-width: 100px;
+    font-size: 0.85rem;
+  }
+
+  .analysis-main {
+    padding: 16px 12px;
+  }
+
+  .main-summary-card {
+    padding: 16px 12px;
+  }
+
+  .issue-card {
+    padding: 16px 12px;
+  }
+}
+
+/* Enhanced Issue Card Styles for Phase 4 */
+
+/* Badges Row Styling */
+.badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px 0;
+  padding: 0;
+}
+
+.badges-row .badge {
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.badges-row .badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.issue-heuristic.badge {
+  cursor: pointer;
+  border: 1px solid #6366f1;
+  color: #6366f1;
+  background: transparent;
+}
+
+.issue-heuristic.badge:hover {
+  background: #6366f1;
+  color: white;
+}
+
+/* Badge Color Classes */
+.badge-outline-primary {
+  border: 1px solid #6366f1;
+  color: #6366f1;
+  background: transparent;
+}
+
+/* Timestamp Section */
+.timestamp-section {
+  margin: 12px 0 16px 0;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #6366f1;
+}
+
+.timestamp-label {
+  font-weight: 600;
+  color: #374151;
+  margin-right: 8px;
+}
+
+.timestamp-link {
+  background: none;
+  border: none;
+  color: #6366f1;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.timestamp-link:hover {
+  color: #4f46e5;
+}
+
+.timestamp-link code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+  font-weight: 600;
+  background: #e5e7eb;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+/* Evidence Section */
+.evidence-section {
+  margin: 16px 0;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.evidence-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.evidence-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.evidence-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.evidence-thumbnails {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.evidence-thumbnail {
+  width: 80px;
+  height: 60px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+  position: relative;
+}
+
+.evidence-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 1.5rem;
+}
+
+.thumbnail-label {
+  font-size: 0.7rem;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.evidence-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.placeholder-icon {
+  font-size: 1.5rem;
+}
+
+/* Progressive Disclosure Styles */
+.issue-description-section, .recommendations-section {
+  margin: 16px 0;
+}
+
+.description-summary {
+  line-height: 1.6;
+}
+
+.description-full {
+  display: none;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.description-full[aria-hidden="false"] {
+  display: block;
+}
+
+.show-more-btn, .show-less-btn {
+  background: none;
+  border: none;
+  color: #6366f1;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0;
+  margin-left: 4px;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.show-more-btn:hover, .show-less-btn:hover {
+  color: #4f46e5;
+}
+
+.recommendations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.toggle-recommendations-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.toggle-recommendations-btn:hover {
+  color: #374151;
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.toggle-recommendations-btn[aria-expanded="true"] .toggle-icon {
+  transform: rotate(90deg);
+}
+
+.recommendations-content {
+  display: none;
+}
+
+.recommendations-content[aria-hidden="false"] {
+  display: block;
+}
+
+.recommendations-content ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.recommendations-content li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+/* Enhanced Action Buttons */
+.issue-card-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.action-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
+
+.action-btn:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.resolve-btn[data-resolved="true"] {
+  background: #d1fae5;
+  border-color: #059669;
+  color: #059669;
+}
+
+.resolve-btn[data-resolved="true"]:hover {
+  background: #a7f3d0;
+}
+
+/* Accessibility Improvements */
+.issue-card:focus-within {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.badge[role="status"] {
+  position: relative;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .badge {
+    border-width: 2px;
+  }
+
+  .timestamp-section {
+    border-left-width: 4px;
+  }
+
+  .evidence-section {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .badge, .action-btn, .timestamp-link, .show-more-btn, .show-less-btn, .toggle-recommendations-btn {
+    transition: none;
+  }
+
+  .toggle-icon {
+    transition: none;
+  }
+}
+
+/* Mobile Responsive Updates for Enhanced Cards */
+@media (max-width: 768px) {
+  .badges-row {
+    gap: 6px;
+  }
+
+  .badges-row .badge {
+    font-size: 0.8rem;
+    padding: 3px 8px;
+  }
+
+  .timestamp-section {
+    padding: 10px;
+  }
+
+  .evidence-thumbnails {
+    gap: 8px;
+  }
+
+  .evidence-thumbnail {
+    width: 60px;
+    height: 45px;
+  }
+
+  .issue-card-actions {
+    gap: 6px;
+  }
+
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .badges-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .timestamp-link {
+    font-size: 0.8rem;
+  }
+
+  .issue-card-actions {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+<script>
+// Tab switching logic
+const tabs = document.querySelectorAll('.tab');
+const tabContents = document.querySelectorAll('.tab-content');
+tabs.forEach((tab, idx) => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tabContents.forEach(tc => tc.classList.remove('active'));
+    tab.classList.add('active');
+    tabContents[idx].classList.add('active');
+  });
+});
+
+function copyIssue(auditId, idx) {
+  const card = document.querySelectorAll('.issue-card')[idx];
+  if (!card) return;
+  let text = '';
+  text += card.querySelector('.issue-title')?.innerText + '\n';
+  text += card.querySelector('.issue-description')?.innerText + '\n';
+  text += 'Recommendations:\n';
+  card.querySelectorAll('.issue-recommendations li').forEach(li => {
+    text += '- ' + li.innerText + '\n';
+  });
+  navigator.clipboard.writeText(text);
+}
+
+// Enhanced highlight card function with URL management and bidirectional sync
+function highlightCard(idx, updateUrl = true) {
+  const cards = document.querySelectorAll('.issue-card');
+  const timelineSteps = document.querySelectorAll('.timeline-step:not(.all-steps)');
+
+  // Clear all highlighting first
+  cards.forEach(card => card.classList.remove('highlighted'));
+  timelineSteps.forEach(step => {
+    step.classList.remove('selected');
+    step.classList.remove('auto-highlighted');
+  });
+
+  // Notify bidirectional sync manager about manual navigation
+  if (window.biDirectionalSync && typeof idx === 'number') {
+    window.biDirectionalSync.setManualNavigation(true);
+  }
+
+  if (idx === 'all' || idx === undefined) {
+    // Show all cards
+    cards.forEach(card => card.style.display = '');
+    document.querySelector('.timeline-step.all-steps')?.classList.add('selected');
+
+    // Clear URL hash if showing all
+    if (updateUrl && window.location.hash) {
+      history.pushState('', document.title, window.location.pathname + window.location.search);
+    }
+  } else if (typeof idx === 'number' && idx >= 0 && idx < cards.length) {
+    const targetCard = cards[idx];
+    const targetStep = timelineSteps[idx];
+
+    // Hide all other cards and highlight target
+    cards.forEach((card, i) => {
+      if (i === idx) {
+        card.classList.add('highlighted');
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Highlight corresponding timeline step
+    if (targetStep) {
+      targetStep.classList.add('selected');
+    }
+
+    // Smooth scroll to the target card
+    if (targetCard) {
+      targetCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      });
+    }
+
+    // Update URL with hash
+    if (updateUrl && targetCard) {
+      const anchorId = targetCard.id;
+      if (anchorId) {
+        const newUrl = `${window.location.pathname}${window.location.search}#${anchorId}`;
+        history.pushState({ cardIndex: idx }, '', newUrl);
+      }
+    }
+  }
+
+  // Remove selection from "All Steps" if specific card is selected
+  if (idx !== 'all' && idx !== undefined) {
+    document.querySelector('.timeline-step.all-steps')?.classList.remove('selected');
+  }
+}
+
+// Deep Linking System for Phase 3
+class DeepLinkManager {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    // Handle initial page load with hash
+    this.handlePageLoad();
+
+    // Listen for hash changes (browser back/forward)
+    window.addEventListener('hashchange', this.handleHashChange.bind(this));
+
+    // Listen for popstate events (browser navigation)
+    window.addEventListener('popstate', this.handlePopState.bind(this));
+  }
+
+  handlePageLoad() {
+    // Check if there's a hash in the URL on page load
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#uxw-')) {
+      setTimeout(() => {
+        this.navigateToAnchor(hash);
+      }, 100); // Small delay to ensure DOM is ready
+    }
+  }
+
+  handleHashChange(event) {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#uxw-')) {
+      this.navigateToAnchor(hash);
+    } else if (!hash) {
+      // No hash, show all cards
+      highlightCard('all', false);
+    }
+  }
+
+  handlePopState(event) {
+    if (event.state && typeof event.state.cardIndex === 'number') {
+      highlightCard(event.state.cardIndex, false);
+    } else {
+      // Check current hash
+      const hash = window.location.hash;
+      if (hash && hash.startsWith('#uxw-')) {
+        this.navigateToAnchor(hash);
+      } else {
+        highlightCard('all', false);
+      }
+    }
+  }
+
+  navigateToAnchor(hash) {
+    const anchorId = hash.substring(1); // Remove the #
+    const targetCard = document.getElementById(anchorId);
+
+    if (targetCard) {
+      // Extract card index from the anchor ID (e.g., uxw-001 -> 0)
+      const match = anchorId.match(/uxw-(\d+)/);
+      if (match) {
+        const cardIndex = parseInt(match[1]) - 1; // Convert to 0-based index
+        highlightCard(cardIndex, false); // Don't update URL since we're responding to it
+
+        // Additional visual feedback for direct links
+        targetCard.classList.add('flash-highlight');
+        setTimeout(() => {
+          targetCard.classList.remove('flash-highlight');
+        }, 1500);
+      }
+    }
+  }
+
+  // Static method to copy link to clipboard
+  static copyLinkToClipboard(anchorId, showToast = true) {
+    const url = new URL(window.location);
+    url.hash = anchorId;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url.toString()).then(() => {
+        if (showToast) {
+          DeepLinkManager.showToast('Link copied to clipboard!', 'success');
+        }
+      }).catch(err => {
+        console.error('Failed to copy link:', err);
+        if (showToast) {
+          DeepLinkManager.showToast('Failed to copy link', 'error');
+        }
+      });
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url.toString();
+      document.body.appendChild(textArea);
+      textArea.select();
+
+      try {
+        document.execCommand('copy');
+        if (showToast) {
+          DeepLinkManager.showToast('Link copied to clipboard!', 'success');
+        }
+      } catch (err) {
+        console.error('Failed to copy link:', err);
+        if (showToast) {
+          DeepLinkManager.showToast('Failed to copy link', 'error');
+        }
+      }
+
+      document.body.removeChild(textArea);
+    }
+  }
+
+  // Simple toast notification system
+  static showToast(message, type = 'info') {
+    // Remove any existing toasts
+    const existingToast = document.querySelector('.deep-link-toast');
+    if (existingToast) {
+      existingToast.remove();
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `deep-link-toast toast-${type}`;
+    toast.textContent = message;
+
+    // Style the toast
+    Object.assign(toast.style, {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      padding: '12px 16px',
+      borderRadius: '6px',
+      color: 'white',
+      fontWeight: '500',
+      fontSize: '14px',
+      zIndex: '10000',
+      transform: 'translateX(100%)',
+      transition: 'transform 0.3s ease',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+    });
+
+    // Set background color based on type
+    const colors = {
+      success: '#10b981',
+      error: '#ef4444',
+      info: '#3b82f6'
+    };
+    toast.style.backgroundColor = colors[type] || colors.info;
+
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => {
+      toast.style.transform = 'translateX(0)';
+    }, 10);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      toast.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  }
+}
+
+// Bidirectional Sync Manager for Phase 3
+class BiDirectionalSyncManager {
+  constructor() {
+    this.observer = null;
+    this.timelineSteps = null;
+    this.cards = null;
+    this.isInitialized = false;
+    this.init();
+  }
+
+  init() {
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.setup());
+    } else {
+      this.setup();
+    }
+  }
+
+  setup() {
+    this.cards = document.querySelectorAll('.issue-card');
+    this.timelineSteps = document.querySelectorAll('.timeline-step:not(.all-steps)');
+
+    if (this.cards.length === 0 || this.timelineSteps.length === 0) {
+      console.warn('BiDirectionalSync: No cards or timeline steps found');
+      return;
+    }
+
+    this.setupIntersectionObserver();
+    this.isInitialized = true;
+  }
+
+  setupIntersectionObserver() {
+    // Create intersection observer with optimized settings
+    const observerOptions = {
+      root: null, // Use viewport as root
+      rootMargin: '-20% 0px -20% 0px', // Only trigger when card is substantially visible
+      threshold: [0.1, 0.5, 0.9] // Multiple thresholds for better accuracy
+    };
+
+    this.observer = new IntersectionObserver((entries) => {
+      this.handleIntersection(entries);
+    }, observerOptions);
+
+    // Observe all issue cards
+    this.cards.forEach(card => {
+      this.observer.observe(card);
+    });
+  }
+
+  handleIntersection(entries) {
+    // Find the most visible card
+    let mostVisibleCard = null;
+    let maxVisibility = 0;
+
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio > maxVisibility) {
+        maxVisibility = entry.intersectionRatio;
+        mostVisibleCard = entry.target;
+      }
+    });
+
+    // If we found a visible card, highlight its timeline step
+    if (mostVisibleCard && maxVisibility > 0.1) {
+      const cardIndex = Array.from(this.cards).indexOf(mostVisibleCard);
+      this.highlightTimelineStep(cardIndex);
+    }
+  }
+
+  highlightTimelineStep(cardIndex) {
+    // Only proceed if not currently manually navigating
+    if (this.isManualNavigation) {
+      return;
+    }
+
+    // Remove previous auto-highlights
+    this.timelineSteps.forEach(step => {
+      step.classList.remove('auto-highlighted');
+    });
+
+    // Add auto-highlight to corresponding step
+    if (cardIndex >= 0 && cardIndex < this.timelineSteps.length) {
+      const targetStep = this.timelineSteps[cardIndex];
+      if (targetStep && !targetStep.classList.contains('selected')) {
+        targetStep.classList.add('auto-highlighted');
+      }
+    }
+  }
+
+  // Call this when user manually navigates to prevent auto-highlighting conflicts
+  setManualNavigation(isManual = true) {
+    this.isManualNavigation = isManual;
+
+    if (isManual) {
+      // Clear auto-highlights during manual navigation
+      this.timelineSteps.forEach(step => {
+        step.classList.remove('auto-highlighted');
+      });
+
+      // Re-enable auto-highlighting after a delay
+      setTimeout(() => {
+        this.isManualNavigation = false;
+      }, 1000);
+    }
+  }
+
+  // Clean up observer
+  destroy() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+    this.isInitialized = false;
+  }
+
+  // Update observer when cards visibility changes (e.g., after filtering)
+  refresh() {
+    if (!this.isInitialized) return;
+
+    // Disconnect existing observer
+    this.observer.disconnect();
+
+    // Re-observe visible cards only
+    this.cards.forEach(card => {
+      if (card.style.display !== 'none') {
+        this.observer.observe(card);
+      }
+    });
+  }
+}
+
+// Issue Filter Class for Phase 2 - Production Ready
+class IssueFilter {
+  constructor() {
+    this.filters = {
+      severity: 'all',
+      heuristic: 'all',
+      component: 'all',
+      search: ''
+    };
+    this.sortBy = 'time';
+    this.cards = [];
+    this.backendIssues = [];
+    this.cachedElements = {};
+    this.boundEventHandlers = {};
+    this.isDestroyed = false;
+
+    try {
+      this.init();
+    } catch (error) {
+      console.error('IssueFilter initialization failed:', error);
+      this.showFallbackUI();
+    }
+  }
+
+  init() {
+    // Cache DOM elements for performance
+    this.cacheElements();
+
+    // Extract backend data from the Rails-rendered page
+    this.extractBackendData();
+
+    // Populate filters with real data
+    this.populateFiltersFromData();
+
+    // Set up event listeners with proper cleanup
+    this.initializeEventListeners();
+
+    // Initialize UI state
+    this.updateResultsCount();
+    this.calculateDynamicPositioning();
+  }
+
+  cacheElements() {
+    this.cachedElements = {
+      cards: Array.from(document.querySelectorAll('.issue-card')),
+      summaryBar: document.querySelector('.executive-summary-bar'),
+      filterToolbar: document.querySelector('.filter-toolbar'),
+      heuristicContainer: document.getElementById('heuristic-filters'),
+      componentContainer: document.getElementById('component-filters'),
+      searchInput: document.getElementById('issue-search'),
+      sortSelect: document.getElementById('sort-select'),
+      visibleCount: document.getElementById('visible-count'),
+      totalCount: document.getElementById('total-count')
+    };
+
+    this.cards = this.cachedElements.cards;
+  }
+
+  extractBackendData() {
+    // Extract the backend issue data from the Rails page
+    // This is more reliable than parsing DOM content
+    try {
+      const issueElements = this.cards;
+      this.backendIssues = [];
+
+      issueElements.forEach((card, index) => {
+        // Extract data attributes that Rails should provide
+        const issueData = {
+          index: index,
+          element: card
+        };
+
+        // We'll need to add data attributes to the Rails template
+        // For now, extract from DOM until we can modify the backend
+        const severityElement = card.querySelector('.issue-severity');
+        const titleElement = card.querySelector('.issue-title');
+        const descriptionElement = card.querySelector('.issue-description');
+        const componentElement = card.querySelector('.issue-component');
+
+        if (severityElement) {
+          issueData.severity = severityElement.textContent.toLowerCase().trim();
+        }
+        if (titleElement) {
+          issueData.title = titleElement.textContent.trim();
+        }
+        if (descriptionElement) {
+          issueData.description = descriptionElement.textContent.trim();
+        }
+        if (componentElement) {
+          issueData.component = componentElement.textContent.trim();
+        }
+
+        // Extract heuristic from description (temporary solution)
+        issueData.heuristic = this.extractHeuristicFromDescription(issueData.description || '');
+
+        this.backendIssues.push(issueData);
+      });
+    } catch (error) {
+      console.error('Failed to extract backend data:', error);
+      throw new Error('Could not parse issue data from page');
+    }
+  }
+
+  extractHeuristicFromDescription(description) {
+    // Extract heuristic from description text until we have proper data attributes
+    const heuristics = [
+      'Visibility of system status',
+      'Match between system and real world',
+      'User control and freedom',
+      'Consistency and standards',
+      'Error prevention',
+      'Recognition rather than recall',
+      'Flexibility and efficiency of use',
+      'Aesthetic and minimalist design',
+      'Help users recognize, diagnose, and recover from errors',
+      'Help and documentation'
+    ];
+
+    const lowerDesc = description.toLowerCase();
+
+    for (const heuristic of heuristics) {
+      const keywords = this.getHeuristicKeywords(heuristic);
+      if (keywords.some(keyword => lowerDesc.includes(keyword))) {
+        return heuristic;
+      }
+    }
+
+    return 'Other'; // Fallback
+  }
+
+  getHeuristicKeywords(heuristic) {
+    const keywordMap = {
+      'Visibility of system status': ['status', 'visibility', 'feedback', 'loading', 'progress'],
+      'Match between system and real world': ['familiar', 'conventions', 'metaphor', 'real world'],
+      'User control and freedom': ['control', 'freedom', 'undo', 'cancel', 'back'],
+      'Consistency and standards': ['consistency', 'standards', 'uniform', 'consistent'],
+      'Error prevention': ['prevention', 'validate', 'confirm', 'warning'],
+      'Recognition rather than recall': ['recognition', 'recall', 'memory', 'visible'],
+      'Flexibility and efficiency of use': ['flexibility', 'efficiency', 'shortcuts', 'accelerators'],
+      'Aesthetic and minimalist design': ['aesthetic', 'minimalist', 'clutter', 'clean'],
+      'Help users recognize, diagnose, and recover from errors': ['error', 'recovery', 'diagnose'],
+      'Help and documentation': ['help', 'documentation', 'guidance', 'support']
+    };
+
+    return keywordMap[heuristic] || [];
+  }
+
+  calculateDynamicPositioning() {
+    // Fix the hardcoded CSS positioning
+    if (this.cachedElements.summaryBar && this.cachedElements.filterToolbar) {
+      try {
+        const summaryHeight = this.cachedElements.summaryBar.offsetHeight;
+        document.documentElement.style.setProperty('--executive-summary-height', `${summaryHeight}px`);
+        document.documentElement.style.setProperty('--filter-toolbar-top', `${summaryHeight}px`);
+      } catch (error) {
+        console.warn('Could not calculate dynamic positioning:', error);
+      }
+    }
+  }
+
+  // Extract unique values from issue data for dynamic filter population
+  populateFiltersFromData() {
+    if (!this.backendIssues.length) {
+      console.warn('No backend issues found, skipping filter population');
+      return;
+    }
+
+    const heuristics = new Set();
+    const components = new Set();
+
+    this.backendIssues.forEach(issue => {
+      if (issue.heuristic && issue.heuristic !== 'Other') {
+        heuristics.add(issue.heuristic);
+      }
+      if (issue.component) {
+        components.add(issue.component);
+      }
+    });
+
+    // Populate heuristic filters with validation
+    this.populateFilterChips(this.cachedElements.heuristicContainer, heuristics, 'heuristic');
+
+    // Populate component filters with validation
+    this.populateFilterChips(this.cachedElements.componentContainer, components, 'component');
+  }
+
+  populateFilterChips(container, items, filterType) {
+    if (!container) {
+      console.warn(`Filter container for ${filterType} not found`);
+      return;
+    }
+
+    try {
+      // Clear existing dynamic chips (keep the "All" chip)
+      const existingChips = container.querySelectorAll('.filter-chip:not([data-filter-value="all"])');
+      existingChips.forEach(chip => chip.remove());
+
+      // Add new chips
+      Array.from(items).sort().forEach(item => {
+        const chip = this.createFilterChip(item, filterType);
+        container.appendChild(chip);
+      });
+    } catch (error) {
+      console.error(`Failed to populate ${filterType} filters:`, error);
+    }
+  }
+
+  createFilterChip(text, filterType) {
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip';
+    chip.type = 'button';
+    chip.dataset.filterValue = this.normalizeFilterValue(text);
+    chip.dataset.originalValue = text;
+    chip.textContent = text;
+    chip.setAttribute('aria-pressed', 'false');
+    chip.setAttribute('role', 'radio');
+    chip.setAttribute('aria-checked', 'false');
+    chip.setAttribute('tabindex', '-1');
+    chip.title = `Filter by ${filterType}: ${text}`;
+
+    return chip;
+  }
+
+  normalizeFilterValue(text) {
+    return text.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  }
+
+  // Get issue data for a specific card (now using cached backend data)
+  getIssueData(cardIndex) {
+    if (cardIndex >= 0 && cardIndex < this.backendIssues.length) {
+      return this.backendIssues[cardIndex];
+    }
+    console.warn(`Invalid card index: ${cardIndex}`);
+    return null;
+  }
+
+  // Get issue data for a card element
+  getIssueDataByElement(cardElement) {
+    const cardIndex = this.cards.indexOf(cardElement);
+    return this.getIssueData(cardIndex);
+  }
+
+  // Initialize all event listeners with proper cleanup
+  initializeEventListeners() {
+    // Bind methods to maintain context
+    this.boundEventHandlers = {
+      handleClick: this.handleDocumentClick.bind(this),
+      handleSearch: this.handleSearchInput.bind(this),
+      handleSort: this.handleSortChange.bind(this),
+      handleResize: this.handleWindowResize.bind(this),
+      handleKeydown: this.handleKeydown.bind(this)
+    };
+
+    try {
+      // Global click handler for filter chips
+      document.addEventListener('click', this.boundEventHandlers.handleClick);
+
+      // Search input with debouncing
+      if (this.cachedElements.searchInput) {
+        this.setupSearchInput();
+      }
+
+      // Sort dropdown
+      if (this.cachedElements.sortSelect) {
+        this.cachedElements.sortSelect.addEventListener('change', this.boundEventHandlers.handleSort);
+      }
+
+      // Window resize for dynamic positioning
+      window.addEventListener('resize', this.boundEventHandlers.handleResize);
+
+      // Keyboard navigation
+      document.addEventListener('keydown', this.boundEventHandlers.handleKeydown);
+
+    } catch (error) {
+      console.error('Failed to initialize event listeners:', error);
+    }
+  }
+
+  setupSearchInput() {
+    let debounceTimer;
+
+    this.cachedElements.searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (!this.isDestroyed) {
+          this.filters.search = e.target.value.toLowerCase().trim();
+          this.applyFilters();
+        }
+      }, 300);
+    });
+
+    // Store timer for cleanup
+    this.searchDebounceTimer = debounceTimer;
+  }
+
+  handleDocumentClick(e) {
+    if (this.isDestroyed) return;
+
+    if (e.target.classList.contains('filter-chip')) {
+      this.handleFilterChipClick(e.target);
+    }
+  }
+
+  handleSearchInput(e) {
+    // Handled by setupSearchInput
+  }
+
+  handleSortChange(e) {
+    if (this.isDestroyed) return;
+
+    this.sortBy = e.target.value;
+    this.applySorting();
+  }
+
+  handleWindowResize() {
+    if (this.isDestroyed) return;
+
+    // Recalculate positioning on window resize
+    this.calculateDynamicPositioning();
+  }
+
+  handleKeydown(e) {
+    if (this.isDestroyed) return;
+
+    // Handle keyboard navigation for filter chips
+    if (e.target.classList.contains('filter-chip')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.handleFilterChipClick(e.target);
+      }
+    }
+  }
+
+  // Cleanup method to prevent memory leaks
+  destroy() {
+    this.isDestroyed = true;
+
+    // Clear timers
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    // Remove event listeners
+    if (this.boundEventHandlers) {
+      document.removeEventListener('click', this.boundEventHandlers.handleClick);
+      window.removeEventListener('resize', this.boundEventHandlers.handleResize);
+      document.removeEventListener('keydown', this.boundEventHandlers.handleKeydown);
+
+      if (this.cachedElements.sortSelect) {
+        this.cachedElements.sortSelect.removeEventListener('change', this.boundEventHandlers.handleSort);
+      }
+    }
+
+    // Clear references
+    this.cards = null;
+    this.backendIssues = null;
+    this.cachedElements = null;
+    this.boundEventHandlers = null;
+  }
+
+  showFallbackUI() {
+    const filterToolbar = this.cachedElements?.filterToolbar;
+    if (filterToolbar) {
+      filterToolbar.innerHTML = `
+        <div class="alert alert-warning" role="alert">
+          <strong>Filter functionality temporarily unavailable.</strong>
+          Please refresh the page to try again.
+        </div>
+      `;
+    }
+  }
+
+  // Handle filter chip click events with validation
+  handleFilterChipClick(chip) {
+    try {
+      const filterContainer = chip.closest('[data-filter-type]');
+      if (!filterContainer) {
+        console.warn('Filter chip not in proper container');
+        return;
+      }
+
+      const filterType = filterContainer.dataset.filterType;
+      const filterValue = chip.dataset.filterValue;
+
+      if (!filterType || !filterValue) {
+        console.warn('Invalid filter chip data');
+        return;
+      }
+
+      // Update ARIA states for radio group behavior
+      chip.parentElement.querySelectorAll('.filter-chip').forEach(c => {
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
+        c.setAttribute('aria-checked', 'false');
+        c.setAttribute('tabindex', '-1');
+      });
+
+      // Activate clicked chip
+      chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
+      chip.setAttribute('aria-checked', 'true');
+      chip.setAttribute('tabindex', '0');
+      chip.focus();
+
+      // Update filter state
+      this.filters[filterType] = filterValue;
+
+      // Apply filters
+      this.applyFilters();
+
+      // Announce to screen readers
+      this.announceFilterChange(filterType, chip.textContent);
+
+    } catch (error) {
+      console.error('Error handling filter chip click:', error);
+    }
+  }
+
+  announceFilterChange(filterType, filterValue) {
+    // Create live region announcement for screen readers
+    const announcement = document.createElement('div');
+    announcement.setAttribute('aria-live', 'polite');
+    announcement.setAttribute('aria-atomic', 'true');
+    announcement.className = 'sr-only';
+    announcement.textContent = `Filtered by ${filterType}: ${filterValue}`;
+
+    document.body.appendChild(announcement);
+
+    // Remove after announcement
+    setTimeout(() => {
+      if (announcement.parentNode) {
+        announcement.parentNode.removeChild(announcement);
+      }
+    }, 1000);
+  }
+
+  // Apply all active filters with proper data validation
+  applyFilters() {
+    if (!this.cards || !this.backendIssues) {
+      console.warn('Cannot apply filters: missing data');
+      return;
+    }
+
+    try {
+      let visibleCount = 0;
+
+      this.cards.forEach((card, index) => {
+        const issueData = this.getIssueData(index);
+        if (!issueData) {
+          card.style.display = 'none';
+          return;
+        }
+
+        let visible = true;
+
+        // Severity filter - exact match
+        if (this.filters.severity !== 'all') {
+          visible = visible && this.matchesSeverity(issueData, this.filters.severity);
+        }
+
+        // Heuristic filter - exact match on heuristic field
+        if (this.filters.heuristic !== 'all') {
+          visible = visible && this.matchesHeuristic(issueData, this.filters.heuristic);
+        }
+
+        // Component filter - exact match
+        if (this.filters.component !== 'all') {
+          visible = visible && this.matchesComponent(issueData, this.filters.component);
+        }
+
+        // Search filter - searches across title and description
+        if (this.filters.search) {
+          visible = visible && this.matchesSearch(issueData, this.filters.search);
+        }
+
+        // Apply visibility
+        card.style.display = visible ? '' : 'none';
+        if (visible) visibleCount++;
+      });
+
+      this.updateResultsCount();
+      this.updateSummaryStats();
+
+      // Refresh bidirectional sync after filtering
+      if (window.biDirectionalSync) {
+        window.biDirectionalSync.refresh();
+      }
+
+    } catch (error) {
+      console.error('Error applying filters:', error);
+    }
+  }
+
+  matchesSeverity(issueData, filterValue) {
+    if (!issueData.severity) return false;
+    return issueData.severity.toLowerCase() === filterValue.toLowerCase();
+  }
+
+  matchesHeuristic(issueData, filterValue) {
+    if (!issueData.heuristic) return false;
+    const normalizedHeuristic = this.normalizeFilterValue(issueData.heuristic);
+    return normalizedHeuristic === filterValue;
+  }
+
+  matchesComponent(issueData, filterValue) {
+    if (!issueData.component) return false;
+    const normalizedComponent = this.normalizeFilterValue(issueData.component);
+    return normalizedComponent === filterValue;
+  }
+
+  matchesSearch(issueData, searchTerm) {
+    const searchableText = [
+      issueData.title || '',
+      issueData.description || '',
+      issueData.component || '',
+      issueData.heuristic || ''
+    ].join(' ').toLowerCase();
+
+    return searchableText.includes(searchTerm.toLowerCase());
+  }
+
+  // Apply sorting to visible cards with performance optimization
+  applySorting() {
+    const cardContainer = document.querySelector('.issue-card-grid');
+    if (!cardContainer) {
+      console.warn('Card container not found for sorting');
+      return;
+    }
+
+    try {
+      // Get visible cards with their data
+      const visibleCardsWithData = [];
+      this.cards.forEach((card, index) => {
+        if (card.style.display !== 'none') {
+          const issueData = this.getIssueData(index);
+          if (issueData) {
+            visibleCardsWithData.push({ card, data: issueData, originalIndex: index });
+          }
+        }
+      });
+
+      // Sort the array
+      visibleCardsWithData.sort((a, b) => {
+        switch (this.sortBy) {
+          case 'severity':
+            return this.compareBySeverity(a.data, b.data);
+          case 'title':
+            return this.compareByTitle(a.data, b.data);
+          case 'time':
+          default:
+            return a.originalIndex - b.originalIndex; // Maintain original order
+        }
+      });
+
+      // Use DocumentFragment for efficient DOM manipulation
+      const fragment = document.createDocumentFragment();
+      visibleCardsWithData.forEach(item => {
+        fragment.appendChild(item.card);
+      });
+
+      // Clear and append sorted cards
+      cardContainer.innerHTML = '';
+      cardContainer.appendChild(fragment);
+
+    } catch (error) {
+      console.error('Error sorting cards:', error);
+    }
+  }
+
+  compareBySeverity(dataA, dataB) {
+    const severityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
+    const scoreA = severityOrder[dataA.severity?.toLowerCase()] || 0;
+    const scoreB = severityOrder[dataB.severity?.toLowerCase()] || 0;
+    return scoreB - scoreA; // High to low
+  }
+
+  compareByTitle(dataA, dataB) {
+    const titleA = dataA.title || '';
+    const titleB = dataB.title || '';
+    return titleA.localeCompare(titleB);
+  }
+
+  // Update the results counter with validation
+  updateResultsCount() {
+    try {
+      const visibleCards = this.cards ? this.cards.filter(card => card.style.display !== 'none') : [];
+      const totalCards = this.cards ? this.cards.length : 0;
+
+      if (this.cachedElements.visibleCount) {
+        this.cachedElements.visibleCount.textContent = visibleCards.length;
+      }
+      if (this.cachedElements.totalCount) {
+        this.cachedElements.totalCount.textContent = totalCards;
+      }
+
+      // Update ARIA live region for screen readers
+      this.announceResultsCount(visibleCards.length, totalCards);
+
+    } catch (error) {
+      console.error('Error updating results count:', error);
+    }
+  }
+
+  announceResultsCount(visible, total) {
+    const resultsText = visible === total
+      ? `Showing all ${total} issues`
+      : `Showing ${visible} of ${total} issues`;
+
+    // Update the results counter with ARIA live region
+    if (this.cachedElements.visibleCount && this.cachedElements.visibleCount.parentElement) {
+      this.cachedElements.visibleCount.parentElement.setAttribute('aria-live', 'polite');
+    }
+  }
+
+  // Update summary stats for visible issues
+  updateSummaryStats() {
+    const visibleCards = this.cards.filter(card => card.style.display !== 'none');
+
+    let highCount = 0, mediumCount = 0, lowCount = 0;
+
+    visibleCards.forEach(card => {
+      const issueData = this.extractIssueData(card);
+      if (issueData.severity.includes('high')) highCount++;
+      else if (issueData.severity.includes('medium')) mediumCount++;
+      else if (issueData.severity.includes('low')) lowCount++;
+    });
+
+    // Update severity badges in summary bar if they exist
+    const summaryBar = document.querySelector('.executive-summary-bar');
+    if (summaryBar) {
+      const highBadge = summaryBar.querySelector('.severity-badge.badge-danger');
+      const mediumBadge = summaryBar.querySelector('.severity-badge.badge-warning');
+      const lowBadge = summaryBar.querySelector('.severity-badge.badge-info');
+
+      if (highBadge) {
+        const icon = highBadge.querySelector('span') ? highBadge.querySelector('span').innerHTML : '🔴';
+        highBadge.innerHTML = `${icon} ${highCount}`;
+      }
+      if (mediumBadge) {
+        const icon = mediumBadge.querySelector('span') ? mediumBadge.querySelector('span').innerHTML : '🟡';
+        mediumBadge.innerHTML = `${icon} ${mediumCount}`;
+      }
+      if (lowBadge) {
+        const icon = lowBadge.querySelector('span') ? lowBadge.querySelector('span').innerHTML : '🔵';
+        lowBadge.innerHTML = `${icon} ${lowCount}`;
+      }
+
+      // Update total issues count
+      const totalMetric = summaryBar.querySelector('.metric-value');
+      if (totalMetric) totalMetric.textContent = visibleCards.length;
+    }
+  }
+}
+
+// Initialize filter and deep linking when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.querySelector('.filter-toolbar')) {
+    new IssueFilter();
+  }
+
+  // Initialize deep linking system
+  if (document.querySelector('.issue-card')) {
+    new DeepLinkManager();
+  }
+
+  // Initialize bidirectional sync
+  if (document.querySelector('.issue-card') && document.querySelector('.timeline-step')) {
+    window.biDirectionalSync = new BiDirectionalSyncManager();
+  }
+});
+
+// Enhanced functions for Phase 4 functionality
+
+// Progressive Disclosure for Descriptions
+function toggleDescription(button) {
+  const summary = button.closest('.description-summary');
+  const fullDescription = summary.nextElementSibling;
+
+  if (!fullDescription) return;
+
+  const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+  // Toggle visibility
+  if (isExpanded) {
+    // Collapse
+    fullDescription.style.display = 'none';
+    fullDescription.setAttribute('aria-hidden', 'true');
+    button.setAttribute('aria-expanded', 'false');
+    button.textContent = 'Show more';
+    summary.style.display = 'block';
+  } else {
+    // Expand
+    fullDescription.style.display = 'block';
+    fullDescription.setAttribute('aria-hidden', 'false');
+    button.setAttribute('aria-expanded', 'true');
+    summary.style.display = 'none';
+  }
+
+  // Announce change to screen readers
+  const announcement = isExpanded ? 'Description collapsed' : 'Description expanded';
+  announceToScreenReader(announcement);
+}
+
+// Progressive Disclosure for Recommendations
+function toggleRecommendations(button) {
+  const content = button.closest('.recommendations-header').nextElementSibling;
+  const icon = button.querySelector('.toggle-icon');
+
+  if (!content || !icon) return;
+
+  const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+  // Toggle visibility with smooth animation
+  if (isExpanded) {
+    // Collapse
+    content.style.display = 'none';
+    content.setAttribute('aria-hidden', 'true');
+    button.setAttribute('aria-expanded', 'false');
+    icon.style.transform = 'rotate(0deg)';
+  } else {
+    // Expand
+    content.style.display = 'block';
+    content.setAttribute('aria-hidden', 'false');
+    button.setAttribute('aria-expanded', 'true');
+    icon.style.transform = 'rotate(90deg)';
+  }
+
+  // Announce change to screen readers
+  const announcement = isExpanded ? 'Recommendations collapsed' : 'Recommendations expanded';
+  announceToScreenReader(announcement);
+}
+
+// Enhanced copy function with markdown formatting
+function copyIssueEnhanced(auditId, idx) {
+  try {
+    const card = document.querySelectorAll('.issue-card')[idx];
+    if (!card) {
+      showToastNotification('Issue not found', 'error');
+      return;
+    }
+
+    // Extract enhanced data with null safety
+    const issueId = card.querySelector('.issue-id')?.textContent?.trim() || `Issue ${idx + 1}`;
+    const title = card.querySelector('.issue-title')?.textContent?.trim() || 'Untitled Issue';
+    const severity = card.querySelector('.issue-severity')?.textContent?.replace(/.*\s/, '').trim() || 'Unknown';
+    const frequency = card.querySelector('.issue-frequency')?.textContent?.replace(/.*\s/, '').trim() || 'Unknown';
+    const confidence = card.querySelector('.issue-confidence')?.textContent?.replace(/.*\s/, '').trim() || 'Unknown';
+    const heuristic = card.querySelector('.issue-heuristic')?.textContent?.replace(/.*\s/, '').trim() || 'General Usability';
+    const timestamp = card.querySelector('.timestamp-link code')?.textContent?.trim() || 'Time not available';
+
+    // Get description (check both summary and full)
+    let description = '';
+    const descSummary = card.querySelector('.description-summary');
+    const descFull = card.querySelector('.description-full');
+    if (descFull && descFull.style.display !== 'none') {
+      description = descFull.textContent.replace('Show less', '').trim();
+    } else if (descSummary) {
+      description = descSummary.textContent.replace('Show more', '').trim();
+    }
+
+    // Get recommendations
+    const recommendations = [];
+    card.querySelectorAll('.recommendations-content li').forEach(li => {
+      recommendations.push(li.textContent.trim());
+    });
+
+    // Format as markdown
+    const markdown = `# ${issueId} ${title}
+
+## Issue Details
+- **Severity**: ${severity.replace(/[^\w\s]/g, '').trim()}
+- **Frequency**: ${frequency.replace(/[^\w\s]/g, '').trim()}
+- **Confidence**: ${confidence.replace(/[^\w\s]/g, '').trim()}
+- **Heuristic**: ${heuristic.replace(/[^\w\s]/g, '').trim()}
+- **Timestamp**: ${timestamp}
+
+## Description
+${description}
+
+## Recommendations
+${recommendations.map(rec => `- ${rec}`).join('\n')}
+
+---
+*Generated from UX Audit - ${new Date().toLocaleDateString()}*`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(markdown).then(() => {
+      showToastNotification('Issue copied to clipboard in markdown format', 'success');
+      announceToScreenReader('Issue details copied to clipboard');
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+      showToastNotification('Failed to copy issue details', 'error');
+    });
+
+  } catch (error) {
+    console.error('Error copying issue:', error);
+    showToastNotification('Error copying issue details', 'error');
+  }
+}
+
+// Create Jira ticket (placeholder for Phase 5)
+function createJiraTicket(auditId, issueIndex) {
+  try {
+    const card = document.querySelectorAll('.issue-card')[issueIndex];
+    if (!card) {
+      showToastNotification('Issue not found', 'error');
+      return;
+    }
+
+    // Get button and add loading state
+    const button = card.querySelector('.jira-btn');
+    if (button) {
+      const originalText = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = '⏳ Creating...';
+
+      // Simulate Jira creation process
+      setTimeout(() => {
+        showToastNotification('Jira integration coming in Phase 5!', 'info');
+        button.disabled = false;
+        button.innerHTML = originalText;
+        announceToScreenReader('Jira ticket creation will be available in Phase 5');
+      }, 1000);
+    } else {
+      showToastNotification('Jira integration coming in Phase 5!', 'info');
+      announceToScreenReader('Jira ticket creation will be available in Phase 5');
+    }
+  } catch (error) {
+    console.error('Error creating Jira ticket:', error);
+    showToastNotification('Error creating Jira ticket', 'error');
+  }
+}
+
+// Mark issue as resolved
+function markAsResolved(issueIndex) {
+  try {
+    const card = document.querySelectorAll('.issue-card')[issueIndex];
+    const button = card?.querySelector('.resolve-btn');
+
+    if (!card || !button) {
+      showToastNotification('Issue or button not found', 'error');
+      return;
+    }
+
+    const isResolved = button.getAttribute('data-resolved') === 'true';
+
+    if (isResolved) {
+      // Unresolve
+      button.setAttribute('data-resolved', 'false');
+      button.innerHTML = '✅ Mark Resolved';
+      button.setAttribute('aria-label', 'Mark this issue as resolved');
+      button.classList.remove('resolved');
+      card.style.opacity = '1';
+      card.classList.remove('resolved-issue');
+      showToastNotification('Issue marked as unresolved', 'info');
+      announceToScreenReader('Issue marked as unresolved');
+    } else {
+      // Resolve
+      button.setAttribute('data-resolved', 'true');
+      button.innerHTML = '↩️ Mark Unresolved';
+      button.setAttribute('aria-label', 'Issue is resolved. Click to unresolve');
+      button.classList.add('resolved');
+      card.style.opacity = '0.7';
+      card.classList.add('resolved-issue');
+      showToastNotification('Issue marked as resolved', 'success');
+      announceToScreenReader('Issue marked as resolved');
+    }
+
+    // Update summary stats if needed
+    updateSummaryStatsAfterResolve();
+  } catch (error) {
+    console.error('Error marking issue as resolved:', error);
+    showToastNotification('Error updating issue status', 'error');
+  }
+}
+
+function updateSummaryStatsAfterResolve() {
+  try {
+    const totalCards = document.querySelectorAll('.issue-card').length;
+    const resolvedCards = document.querySelectorAll('.issue-card.resolved-issue').length;
+    const activeCards = totalCards - resolvedCards;
+
+    // Update total count in summary if it exists
+    const totalMetric = document.querySelector('.summary-metrics .metric-value');
+    if (totalMetric && window.showResolvedInCount !== true) {
+      totalMetric.textContent = activeCards;
+    }
+  } catch (error) {
+    console.error('Error updating summary stats:', error);
+  }
+}
+
+// View evidence (expand thumbnails)
+function viewEvidence(issueIndex) {
+  const card = document.querySelectorAll('.issue-card')[issueIndex];
+  const evidenceSection = card.querySelector('.evidence-section');
+
+  if (!evidenceSection) {
+    showToastNotification('No evidence available for this issue', 'info');
+    return;
+  }
+
+  // For now, just highlight the evidence section
+  evidenceSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  evidenceSection.style.border = '2px solid #6366f1';
+  evidenceSection.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.2)';
+
+  setTimeout(() => {
+    evidenceSection.style.border = '1px solid #e5e7eb';
+    evidenceSection.style.boxShadow = 'none';
+  }, 2000);
+
+  announceToScreenReader('Evidence section highlighted');
+}
+
+// Open video clip (placeholder for future video integration)
+function openVideoClip(anchorId) {
+  const timestamp = document.querySelector(`#${anchorId} .timestamp-link code`)?.textContent;
+  showToastNotification(`Video clip feature coming soon. Timestamp: ${timestamp}`, 'info');
+  announceToScreenReader(`Video clip will open at timestamp ${timestamp} when feature is available`);
+}
+
+// Toast notification system
+function showToastNotification(message, type = 'info') {
+  // Reuse existing toast system if available
+  if (typeof DeepLinkManager !== 'undefined' && DeepLinkManager.showToast) {
+    DeepLinkManager.showToast(message, type);
+    return;
+  }
+
+  // Fallback toast implementation
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+
+  Object.assign(toast.style, {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    padding: '12px 20px',
+    borderRadius: '6px',
+    color: 'white',
+    fontWeight: '500',
+    zIndex: '10000',
+    transform: 'translateX(100%)',
+    transition: 'transform 0.3s ease'
+  });
+
+  // Set background color based on type
+  const colors = {
+    success: '#10b981',
+    error: '#ef4444',
+    info: '#3b82f6',
+    warning: '#f59e0b'
+  };
+  toast.style.backgroundColor = colors[type] || colors.info;
+
+  document.body.appendChild(toast);
+
+  // Show toast
+  setTimeout(() => {
+    toast.style.transform = 'translateX(0)';
+  }, 100);
+
+  // Hide and remove toast
+  setTimeout(() => {
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }, 3000);
+}
+
+// Screen reader announcement utility
+function announceToScreenReader(message) {
+  const announcement = document.createElement('div');
+  announcement.setAttribute('aria-live', 'polite');
+  announcement.setAttribute('aria-atomic', 'true');
+  announcement.className = 'sr-only';
+  announcement.textContent = message;
+
+  // Add screen reader only styles
+  Object.assign(announcement.style, {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: '0',
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    border: '0'
+  });
+
+  document.body.appendChild(announcement);
+
+  // Remove after announcement
+  setTimeout(() => {
+    if (announcement.parentNode) {
+      announcement.parentNode.removeChild(announcement);
+    }
+  }, 1000);
+}
+
+// Keyboard navigation improvements
+document.addEventListener('keydown', function(e) {
+  // Add keyboard shortcuts for common actions
+  if (e.ctrlKey || e.metaKey) {
+    switch(e.key) {
+      case 'k':
+        // Focus search (Ctrl/Cmd + K)
+        e.preventDefault();
+        const searchInput = document.getElementById('issue-search');
+        if (searchInput) {
+          searchInput.focus();
+          announceToScreenReader('Search focused');
+        }
+        break;
+    }
+  }
+
+  // Escape key handling
+  if (e.key === 'Escape') {
+    // Close any expanded descriptions or recommendations
+    document.querySelectorAll('.show-less-btn').forEach(btn => {
+      if (btn.closest('.description-full').style.display !== 'none') {
+        toggleDescription(btn);
+      }
+    });
+
+    document.querySelectorAll('.toggle-recommendations-btn[aria-expanded="true"]').forEach(btn => {
+      toggleRecommendations(btn);
+    });
+  }
+});
+
+// Initialize enhanced features on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Set up initial accessibility states
+  document.querySelectorAll('.recommendations-content').forEach(content => {
+    content.style.display = 'none';
+    content.setAttribute('aria-hidden', 'true');
+  });
+
+  document.querySelectorAll('.description-full').forEach(desc => {
+    desc.style.display = 'none';
+    desc.setAttribute('aria-hidden', 'true');
+  });
+
+  // Add focus management for better keyboard navigation
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('focus', function() {
+      this.style.outline = '2px solid #6366f1';
+      this.style.outlineOffset = '2px';
+    });
+
+    btn.addEventListener('blur', function() {
+      this.style.outline = '';
+      this.style.outlineOffset = '';
+    });
+  });
+
+  console.log('Phase 4 enhanced issue cards initialized');
+
+  // Add event delegation for export buttons
+  setupExportButtonHandlers();
+});
+
+// Export Button Handlers
+function setupExportButtonHandlers() {
+  document.addEventListener('click', function(e) {
+    const target = e.target;
+    const action = target.getAttribute('data-action');
+
+    if (!action) return;
+
+    try {
+      // Add loading state
+      const originalText = target.textContent;
+      target.disabled = true;
+      target.innerHTML = '⏳ Processing...';
+
+      switch(action) {
+        case 'export-pdf':
+          handleExportPDF(target, originalText);
+          break;
+        case 'export-csv':
+          handleExportCSV(target, originalText);
+          break;
+        case 'export-json':
+          handleExportJSON(target, originalText);
+          break;
+        case 'create-jira-epic':
+          handleCreateJiraEpic(target, originalText);
+          break;
+        default:
+          console.warn('Unknown action:', action);
+          resetButton(target, originalText);
+      }
+    } catch (error) {
+      console.error('Error handling export action:', error);
+      showToastNotification('An error occurred. Please try again.', 'error');
+      resetButton(target, originalText);
+    }
+  });
+}
+
+function resetButton(button, originalText) {
+  button.disabled = false;
+  button.innerHTML = originalText;
+}
+
+function handleExportPDF(button, originalText) {
+  try {
+    // Generate PDF content from current page data
+    const auditData = collectAuditData();
+
+    // For now, create a simple text representation
+    const content = generatePDFContent(auditData);
+    const blob = new Blob([content], { type: 'text/plain' });
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ux-audit-report-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToastNotification('PDF exported successfully!', 'success');
+    resetButton(button, originalText);
+  } catch (error) {
+    console.error('PDF export failed:', error);
+    showToastNotification('PDF export failed. Please try again.', 'error');
+    resetButton(button, originalText);
+  }
+}
+
+function handleExportCSV(button, originalText) {
+  try {
+    const auditData = collectAuditData();
+    const csvContent = generateCSVContent(auditData);
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ux-audit-issues-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToastNotification('CSV exported successfully!', 'success');
+    resetButton(button, originalText);
+  } catch (error) {
+    console.error('CSV export failed:', error);
+    showToastNotification('CSV export failed. Please try again.', 'error');
+    resetButton(button, originalText);
+  }
+}
+
+function handleExportJSON(button, originalText) {
+  try {
+    const auditData = collectAuditData();
+    const jsonContent = JSON.stringify(auditData, null, 2);
+
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ux-audit-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showToastNotification('JSON exported successfully!', 'success');
+    resetButton(button, originalText);
+  } catch (error) {
+    console.error('JSON export failed:', error);
+    showToastNotification('JSON export failed. Please try again.', 'error');
+    resetButton(button, originalText);
+  }
+}
+
+function handleCreateJiraEpic(button, originalText) {
+  // Placeholder for future Jira integration
+  setTimeout(() => {
+    showToastNotification('Jira Epic creation feature coming in Phase 5!', 'info');
+    resetButton(button, originalText);
+  }, 1500);
+}
+
+function collectAuditData() {
+  const summaryStats = {
+    totalIssues: document.querySelector('.metric-value')?.textContent || '0',
+    highCount: document.querySelector('.severity-badge.high')?.textContent?.match(/\d+/)?.[0] || '0',
+    mediumCount: document.querySelector('.severity-badge.medium')?.textContent?.match(/\d+/)?.[0] || '0',
+    lowCount: document.querySelector('.severity-badge.low')?.textContent?.match(/\d+/)?.[0] || '0',
+    exportDate: new Date().toISOString()
+  };
+
+  const issues = [];
+  document.querySelectorAll('.issue-card').forEach((card, index) => {
+    const issue = {
+      id: card.querySelector('.issue-id')?.textContent || `Issue ${index + 1}`,
+      title: card.querySelector('.issue-title')?.textContent || 'Untitled',
+      severity: card.querySelector('.issue-severity')?.textContent?.replace(/.*\s/, '') || 'Unknown',
+      component: card.querySelector('.issue-component')?.textContent || 'Unknown',
+      description: card.querySelector('.description-summary')?.textContent?.trim() || 'No description',
+      timestamp: card.querySelector('.timestamp-link code')?.textContent || 'Unknown',
+      frequency: card.querySelector('.issue-frequency')?.textContent?.replace(/.*\s/, '') || 'Unknown',
+      confidence: card.querySelector('.issue-confidence')?.textContent?.replace(/.*\s/, '') || 'Unknown',
+      heuristic: card.querySelector('.issue-heuristic')?.textContent?.replace(/.*\s/, '') || 'Unknown'
+    };
+    issues.push(issue);
+  });
+
+  return {
+    summary: summaryStats,
+    issues: issues,
+    metadata: {
+      exportDate: new Date().toISOString(),
+      exportType: 'ux-audit-report',
+      version: '1.0'
+    }
+  };
+}
+
+function generatePDFContent(data) {
+  let content = `UX AUDIT REPORT\n`;
+  content += `Generated: ${new Date().toLocaleDateString()}\n\n`;
+  content += `EXECUTIVE SUMMARY\n`;
+  content += `================\n`;
+  content += `Total Issues: ${data.summary.totalIssues}\n`;
+  content += `High Severity: ${data.summary.highCount}\n`;
+  content += `Medium Severity: ${data.summary.mediumCount}\n`;
+  content += `Low Severity: ${data.summary.lowCount}\n\n`;
+
+  content += `DETAILED ISSUES\n`;
+  content += `===============\n\n`;
+
+  data.issues.forEach((issue, index) => {
+    content += `${index + 1}. ${issue.title}\n`;
+    content += `   ID: ${issue.id}\n`;
+    content += `   Severity: ${issue.severity}\n`;
+    content += `   Component: ${issue.component}\n`;
+    content += `   Timestamp: ${issue.timestamp}\n`;
+    content += `   Description: ${issue.description}\n`;
+    content += `   Heuristic: ${issue.heuristic}\n\n`;
+  });
+
+  return content;
+}
+
+function generateCSVContent(data) {
+  let csv = 'Issue ID,Title,Severity,Component,Timestamp,Frequency,Confidence,Heuristic,Description\n';
+
+  data.issues.forEach(issue => {
+    const row = [
+      issue.id,
+      `"${issue.title.replace(/"/g, '""')}"`,
+      issue.severity,
+      issue.component,
+      issue.timestamp,
+      issue.frequency,
+      issue.confidence,
+      issue.heuristic,
+      `"${issue.description.replace(/"/g, '""')}"`
+    ].join(',');
+    csv += row + '\n';
+  });
+
+  return csv;
+}
+
+</script>
+<% end %>

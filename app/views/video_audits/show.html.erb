@@ -107,13 +107,13 @@
       <h1 class="report-title">Workflow Report</h1>
     </div>
     <div class="header-right">
-      <button class="filter-btn" onclick="alert('Filters coming soon!')">
+      <button class="filter-btn" id="filter-btn">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
         </svg>
         Filters
       </button>
-      <button class="export-btn" onclick="window.print()">
+      <button class="export-btn" id="export-btn">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
         </svg>
@@ -137,7 +137,7 @@
         <div class="stat-card high-severity">
           <div class="stat-label">
             High Severity
-            <button class="severity-info-icon" onclick="openSeverityInfo('high')" title="Learn about High severity" aria-label="Information about High severity">
+            <button class="severity-info-icon" data-severity="high" data-tooltip="Blocks critical tasks - Fix this week - Click for more info" aria-label="Information about High severity">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
                 <text x="8" y="11" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">i</text>
@@ -149,7 +149,7 @@
         <div class="stat-card medium-severity">
           <div class="stat-label">
             Medium
-            <button class="severity-info-icon" onclick="openSeverityInfo('medium')" title="Learn about Medium severity" aria-label="Information about Medium severity">
+            <button class="severity-info-icon" data-severity="medium" data-tooltip="Causes friction - Fix this month - Click for more info" aria-label="Information about Medium severity">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
                 <text x="8" y="11" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">i</text>
@@ -161,7 +161,7 @@
         <div class="stat-card low-severity">
           <div class="stat-label">
             Low
-            <button class="severity-info-icon" onclick="openSeverityInfo('low')" title="Learn about Low severity" aria-label="Information about Low severity">
+            <button class="severity-info-icon" data-severity="low" data-tooltip="Polish issue - Fix when you have time - Click for more info" aria-label="Information about Low severity">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                 <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
                 <text x="8" y="11" text-anchor="middle" font-size="10" font-weight="bold" fill="currentColor">i</text>
@@ -177,7 +177,7 @@
           <div class="timeline-ranges">
             <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
               <% if issue["frameReference"] %>
-                <button class="timeline-range-btn" onclick="highlightCard(<%= idx %>)">
+                <button class="timeline-range-btn" data-issue-index="<%= idx %>">
                   <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 3px;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                   </svg>
@@ -192,7 +192,7 @@
       <!-- Workflow Analysis - Separate Collapsible Section -->
       <% if @audit.parsed_llm_response.dig('workflowSummary') %>
         <div class="workflow-analysis-section">
-          <button class="workflow-toggle-btn" onclick="toggleWorkflowDetails()">
+          <button class="workflow-toggle-btn" id="workflow-toggle-btn">
             <span class="workflow-title"><%= @audit.parsed_llm_response['workflowSummary']['workflowtitle'] || 'Workflow Analysis' %></span>
             <svg class="chevron-workflow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -277,13 +277,13 @@
 
                   <!-- Card Actions -->
                   <div class="issue-card-actions">
-                    <button class="copy-btn" onclick="copyIssue(<%= @audit.id %>, <%= idx %>)">
+                    <button class="copy-btn" data-audit-id="<%= @audit.id %>" data-issue-index="<%= idx %>">
                       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                       </svg>
                       Copy
                     </button>
-                    <button class="jira-btn" onclick="trackJiraIntegration(<%= @audit.id %>, <%= idx %>)">
+                    <button class="jira-btn" data-audit-id="<%= @audit.id %>" data-issue-index="<%= idx %>">
                       <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5z"></path>
                       </svg>
@@ -358,9 +358,9 @@
   </div>
 
   <!-- Severity Info Modal -->
-  <div id="severityModal" class="severity-modal" style="display: none;" onclick="closeSeverityModal(event)">
-    <div class="severity-modal-content" onclick="event.stopPropagation()">
-      <button class="severity-modal-close" onclick="closeSeverityModal()" aria-label="Close modal">&times;</button>
+  <div id="severityModal" class="severity-modal" style="display: none;">
+    <div class="severity-modal-content">
+      <button class="severity-modal-close" aria-label="Close modal">&times;</button>
       <div id="severityModalBody"></div>
     </div>
   </div>
@@ -376,7 +376,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 40px 16px 40px;
+  padding: 12px 40px 10px 40px;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -395,8 +395,8 @@
   color: #4f46e5;
 }
 .report-title {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: #1e293b;
   margin: 0;
 }
@@ -408,13 +408,14 @@
 .filter-btn, .export-btn {
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 10px 16px;
+  border-radius: 6px;
+  padding: 6px 12px;
   font-weight: 500;
+  font-size: 0.85rem;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   color: #374151;
   transition: all 0.2s;
 }
@@ -436,21 +437,29 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 10px 14px;
   text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .stat-label {
   font-size: 0.8rem;
   color: #6b7280;
-  margin-bottom: 6px;
   font-weight: 500;
   display: flex;
   align-items: center;
 }
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #1e293b;
+  flex-shrink: 0;
+}
+.stat-card.total .stat-value {
+  color: #6366f1;
+  font-weight: 800;
 }
 .stat-value.high { color: #dc2626; }
 .stat-value.medium { color: #f59e0b; }
@@ -556,6 +565,9 @@
   transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
   background: #f9fafb;
   border-radius: 6px;
+}
+
+.workflow-details.collapsed {
   max-height: 0;
   opacity: 0;
   padding: 0 16px;
@@ -1059,6 +1071,7 @@
   align-items: center;
   width: 14px;
   height: 14px;
+  position: relative;
 }
 
 .severity-info-icon:hover {
@@ -1075,6 +1088,51 @@
 .severity-info-icon svg {
   width: 14px;
   height: 14px;
+}
+
+/* Severity Tooltip on Hover */
+.severity-info-icon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.severity-info-icon::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-2px);
+  border: 5px solid transparent;
+  border-top-color: #1f2937;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 1000;
+}
+
+.severity-info-icon:hover::after,
+.severity-info-icon:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.severity-info-icon:hover::before {
+  transform: translateX(-50%) translateY(1px);
 }
 
 /* Severity Modal */
@@ -1482,5 +1540,92 @@ document.addEventListener('keydown', function(event) {
     closeSeverityModal();
   }
 });
+
+// ========================================
+// EVENT LISTENERS (CSP Compliant)
+// ========================================
+
+// Severity info icon click handlers
+document.querySelectorAll('.severity-info-icon').forEach(function(button) {
+  button.addEventListener('click', function() {
+    const severity = this.getAttribute('data-severity');
+    openSeverityInfo(severity);
+  });
+});
+
+// Timeline range button click handlers
+document.querySelectorAll('.timeline-range-btn').forEach(function(button) {
+  button.addEventListener('click', function() {
+    const idx = parseInt(this.getAttribute('data-issue-index'), 10);
+    highlightCard(idx);
+  });
+});
+
+// Workflow toggle button click handler
+const workflowToggleBtn = document.getElementById('workflow-toggle-btn');
+if (workflowToggleBtn) {
+  workflowToggleBtn.addEventListener('click', toggleWorkflowDetails);
+}
+
+// Copy button click handlers
+document.querySelectorAll('.copy-btn').forEach(function(button) {
+  button.addEventListener('click', function() {
+    const auditId = parseInt(this.getAttribute('data-audit-id'), 10);
+    const idx = parseInt(this.getAttribute('data-issue-index'), 10);
+    copyIssue(auditId, idx);
+  });
+});
+
+// Jira button click handlers
+document.querySelectorAll('.jira-btn').forEach(function(button) {
+  button.addEventListener('click', function() {
+    const auditId = parseInt(this.getAttribute('data-audit-id'), 10);
+    const idx = parseInt(this.getAttribute('data-issue-index'), 10);
+    trackJiraIntegration(auditId, idx);
+  });
+});
+
+// Modal close handlers
+const severityModal = document.getElementById('severityModal');
+const modalCloseBtn = document.querySelector('.severity-modal-close');
+
+if (severityModal) {
+  // Close on backdrop click
+  severityModal.addEventListener('click', function(event) {
+    if (event.target === severityModal) {
+      closeSeverityModal();
+    }
+  });
+}
+
+if (modalCloseBtn) {
+  // Close on X button click
+  modalCloseBtn.addEventListener('click', function() {
+    closeSeverityModal();
+  });
+}
+
+// Prevent modal content clicks from closing modal
+const modalContent = document.querySelector('.severity-modal-content');
+if (modalContent) {
+  modalContent.addEventListener('click', function(event) {
+    event.stopPropagation();
+  });
+}
+
+// Header button handlers
+const filterBtn = document.getElementById('filter-btn');
+if (filterBtn) {
+  filterBtn.addEventListener('click', function() {
+    alert('Filters coming soon!');
+  });
+}
+
+const exportBtn = document.getElementById('export-btn');
+if (exportBtn) {
+  exportBtn.addEventListener('click', function() {
+    window.print();
+  });
+}
 </script>
 <% end %>
