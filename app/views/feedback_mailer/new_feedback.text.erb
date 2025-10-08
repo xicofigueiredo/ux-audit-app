@@ -1,0 +1,17 @@
+New Feedback Received
+=====================
+
+From: <%= @user_name %>
+Email: <%= @user_email %>
+Time: <%= @timestamp %>
+
+Feedback:
+---------
+<%= @feedback_text %>
+
+<% if attachments.any? %>
+Attachments: <%= attachments.count %> image(s)
+<% end %>
+
+---
+This feedback was submitted via UX Audit App

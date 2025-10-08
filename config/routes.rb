@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   resources :video_audits, only: [:create, :show, :index, :destroy]
   resources :projects, only: [:index]
   get "demo" => "pages#demo"
+  post "feedback" => "feedback#create"
   root "pages#home"
 
   # Sidekiq web interface (protect in production)
