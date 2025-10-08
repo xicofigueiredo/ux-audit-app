@@ -205,6 +205,10 @@ To ensure a world-class audit, you MUST follow this thinking process:
         raise "OpenAI response is not valid JSON: #{e.message}"
       end
       audit.update!(status: 'completed', llm_response: parsed_analysis)
+
+      # Save issue screenshots based on frameReference
+      save_issue_screenshots(audit, parsed_analysis, frame_paths)
+
       CleanupJob.perform_later(audit.id)
     rescue => e
       Rails.logger.error("LLM Analysis Error: #{e.message}")
@@ -256,5 +260,53 @@ To ensure a world-class audit, you MUST follow this thinking process:
 
     # Get relevant context based on the analysis so far
     @ux_knowledge_service.retrieve_for_ux_analysis(combined_summaries)
+  end
+
+  def save_issue_screenshots(audit, parsed_analysis, frame_paths)
+    return unless parsed_analysis.is_a?(Hash)
+    issues = parsed_analysis['identifiedIssues']
+    return unless issues.is_a?(Array)
+
+    issues.each_with_index do |issue, index|
+      frame_reference = issue['frameReference']
+      next unless frame_reference.present?
+
+      # Extract frame number from reference (e.g., "Frame 5" -> 5, "Frames 12-14" -> 12)
+      frame_number = extract_first_frame_number(frame_reference)
+      next unless frame_number
+
+      # Find the corresponding frame file
+      frame_file = find_frame_file(frame_paths, frame_number)
+      next unless frame_file && File.exist?(frame_file)
+
+      begin
+        # Read and encode the frame as base64
+        image_data = Base64.strict_encode64(File.read(frame_file))
+
+        # Create IssueScreenshot record
+        audit.issue_screenshots.create!(
+          issue_index: index,
+          image_data: image_data
+        )
+
+        Rails.logger.info "Saved screenshot for issue ##{index} from #{frame_file}"
+      rescue => e
+        Rails.logger.error "Failed to save screenshot for issue ##{index}: #{e.message}"
+      end
+    end
+  end
+
+  def extract_first_frame_number(frame_reference)
+    # Handle various formats: "Frame 5", "Frames 12-14", "Frame 3", etc.
+    match = frame_reference.match(/\d+/)
+    match ? match[0].to_i : nil
+  end
+
+  def find_frame_file(frame_paths, frame_number)
+    # Frame files are named like: frame_0001.jpg, frame_0002.jpg, etc.
+    # Find the file that matches the frame number
+    frame_paths.find do |path|
+      path.match(/frame_(\d+)\.jpg$/) && $1.to_i == frame_number
+    end
   end
 end

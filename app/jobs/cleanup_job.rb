@@ -5,7 +5,7 @@ class CleanupJob < ApplicationJob
     audit = VideoAudit.find(video_audit_id)
 
     begin
-      # Delete frames
+      # Delete temporary frame files (thumbnails and issue screenshots are already saved in database)
       if audit.frames.present?
         audit.frames.each do |frame_path|
           File.delete(frame_path) if File.exist?(frame_path)

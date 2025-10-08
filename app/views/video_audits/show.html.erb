@@ -259,6 +259,24 @@
                     </div>
                   <% end %>
 
+                  <!-- Screenshot Section -->
+                  <% screenshot = @audit.issue_screenshots.find_by(issue_index: idx) %>
+                  <% if screenshot && screenshot.image_data.present? %>
+                    <div class="issue-screenshot-container" style="margin-bottom: 14px;">
+                      <strong style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: #111827;">Screenshot:</strong>
+                      <div class="screenshot-thumbnail" data-issue-index="<%= idx %>" style="cursor: pointer; position: relative; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; transition: all 0.2s;">
+                        <img src="data:image/jpeg;base64,<%= screenshot.image_data %>"
+                             alt="Issue screenshot"
+                             class="issue-screenshot-img"
+                             style="width: 100%; height: 100%; object-fit: cover;"
+                             loading="lazy">
+                        <div style="position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px 0 0 0;">
+                          🔍 Click to expand
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
                   <!-- Evidence Section -->
                   <div class="issue-evidence">
                     <strong>Evidence:</strong>
@@ -362,6 +380,14 @@
     <div class="severity-modal-content">
       <button class="severity-modal-close" aria-label="Close modal">&times;</button>
       <div id="severityModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Screenshot Modal -->
+  <div id="screenshotModal" class="screenshot-modal" style="display: none;">
+    <div class="screenshot-modal-content">
+      <button class="screenshot-modal-close" aria-label="Close modal">&times;</button>
+      <img id="screenshotModalImage" src="" alt="Issue screenshot enlarged" style="max-width: 90%; max-height: 90vh; border-radius: 8px;">
     </div>
   </div>
 </div>
@@ -1295,6 +1321,77 @@
     font-size: 1.5rem;
   }
 }
+
+/* Screenshot Modal Styles */
+.screenshot-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+.screenshot-modal-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.screenshot-modal-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  font-size: 32px;
+  color: #374151;
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  line-height: 1;
+  z-index: 10001;
+}
+
+.screenshot-modal-close:hover {
+  background: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.screenshot-thumbnail:hover {
+  border-color: #6366f1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.screenshot-thumbnail:hover img {
+  transform: scale(1.05);
+  transition: transform 0.2s;
+}
 </style>
 
 <script nonce="<%= content_security_policy_nonce %>">
@@ -1627,5 +1724,63 @@ if (exportBtn) {
     window.print();
   });
 }
+
+// Screenshot Modal Functions
+function openScreenshotModal(screenshotImg) {
+  const modal = document.getElementById('screenshotModal');
+  const modalImage = document.getElementById('screenshotModalImage');
+
+  if (screenshotImg) {
+    modalImage.src = screenshotImg.src;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeScreenshotModal() {
+  const modal = document.getElementById('screenshotModal');
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Screenshot modal event listeners
+const screenshotModal = document.getElementById('screenshotModal');
+const screenshotModalClose = document.querySelector('.screenshot-modal-close');
+
+if (screenshotModal) {
+  // Close on backdrop click
+  screenshotModal.addEventListener('click', function(event) {
+    if (event.target === screenshotModal) {
+      closeScreenshotModal();
+    }
+  });
+}
+
+if (screenshotModalClose) {
+  // Close on X button click
+  screenshotModalClose.addEventListener('click', function() {
+    closeScreenshotModal();
+  });
+}
+
+// Close screenshot modal on ESC key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    const modal = document.getElementById('screenshotModal');
+    if (modal && modal.style.display === 'flex') {
+      closeScreenshotModal();
+    }
+  }
+});
+
+// Add click event listeners to all screenshot thumbnails
+document.querySelectorAll('.screenshot-thumbnail').forEach(function(thumbnail) {
+  thumbnail.addEventListener('click', function() {
+    const img = this.querySelector('.issue-screenshot-img');
+    if (img) {
+      openScreenshotModal(img);
+    }
+  });
+});
 </script>
 <% end %>

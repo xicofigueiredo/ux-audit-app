@@ -10,10 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_04_160834) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_08_144350) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "vector"
+
+  create_table "issue_screenshots", force: :cascade do |t|
+    t.bigint "video_audit_id", null: false
+    t.integer "issue_index"
+    t.text "image_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["video_audit_id"], name: "index_issue_screenshots_on_video_audit_id"
+  end
 
   create_table "llm_partial_responses", force: :cascade do |t|
     t.bigint "video_audit_id", null: false
@@ -37,6 +46,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_04_160834) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+# Could not dump table "ux_knowledge_documents" because of following StandardError
+#   Unknown type 'vector(1536)' for column 'embedding'
+
   create_table "video_audits", force: :cascade do |t|
     t.string "video"
     t.string "status", default: "pending"
@@ -51,11 +63,13 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_04_160834) do
     t.string "share_token"
     t.datetime "shared_at"
     t.bigint "user_id", null: false
+    t.text "thumbnail_image"
     t.index ["jira_epic_key"], name: "index_video_audits_on_jira_epic_key"
     t.index ["share_token"], name: "index_video_audits_on_share_token", unique: true
     t.index ["user_id"], name: "index_video_audits_on_user_id"
   end
 
+  add_foreign_key "issue_screenshots", "video_audits"
   add_foreign_key "llm_partial_responses", "video_audits"
   add_foreign_key "video_audits", "users"
 end

@@ -39,11 +39,25 @@ class VideoProcessingJob < ApplicationJob
 
       Rails.logger.info "Extracted frames: \n#{frame_paths.inspect} (count: #{frame_paths.size})"
 
+      # Save the first frame as thumbnail (base64 encoded)
+      thumbnail_base64 = nil
+      if frame_paths.any?
+        first_frame_path = frame_paths.first
+        thumbnail_base64 = Base64.strict_encode64(File.read(first_frame_path))
+        Rails.logger.info "Encoded thumbnail from #{first_frame_path}, length: #{thumbnail_base64.length}"
+      end
+
       # Track frame extraction completion and transition to AI analysis
       extraction_duration = (Time.current - stage_start_time).to_i
       track_processing_stage(audit.id, 'extraction_completed', extraction_duration)
 
-      audit.update!(frames: frame_paths, processing_stage: 'analyzing_ai')
+      # Update audit with frames, thumbnail, and processing stage in one call
+      audit.update!(
+        frames: frame_paths,
+        thumbnail_image: thumbnail_base64,
+        processing_stage: 'analyzing_ai'
+      )
+      Rails.logger.info "Updated audit with #{frame_paths.size} frames and thumbnail"
       track_processing_stage(audit.id, 'analyzing_ai')
 
       LlmAnalysisJob.perform_later(audit.id)

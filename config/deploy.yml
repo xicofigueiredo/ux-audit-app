@@ -14,7 +14,7 @@ servers:
       cpus: "1.0"
     labels:
       # Router: match your host on both :80 and :443 and enable TLS at the proxy
-      traefik.http.routers.uxauditapp-web.rule: Host(`uxauditapp.zelusottomayor.com`)
+      traefik.http.routers.uxauditapp-web.rule: Host(`uxauditapp.com`)
       traefik.http.routers.uxauditapp-web.entrypoints: web,websecure
       traefik.http.routers.uxauditapp-web.tls: "true"
 
@@ -34,7 +34,7 @@ servers:
 #
 # Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
 proxy:
-  host: uxauditapp.zelusottomayor.com
+  host: uxauditapp.com
   ssl: true
   app_port: 3000
   healthcheck:
