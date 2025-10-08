@@ -264,7 +264,7 @@
 }
 </style>
 
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
 // Dropdown functionality
 document.addEventListener('DOMContentLoaded', function() {
   const dropdownToggles = document.querySelectorAll('.dropdown-toggle');

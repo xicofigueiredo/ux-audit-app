@@ -9,15 +9,22 @@ module AnalyticsHelper
       sanitized_params.merge!(get_user_context)
     end
 
-    # For background jobs or server-side tracking
-    if defined?(content_for)
+    # Check if we're in a view context or controller context
+    if respond_to?(:content_for, true) && !is_a?(ActionController::Base)
+      # We're in a view - use content_for directly
       content_for :analytics_events do
         javascript_tag nonce: true do
           raw "gtag('event', '#{event_name}', #{sanitized_params.to_json});"
         end
       end
+    elsif defined?(session) && respond_to?(:session)
+      # We're in a controller - store event in session for next render
+      # Use string keys to avoid session serialization issues
+      session[:pending_analytics_events] ||= []
+      session[:pending_analytics_events] << { 'event' => event_name, 'params' => sanitized_params }
+      Rails.logger.debug "[Analytics] Queued event: #{event_name}, Parameters: #{sanitized_params.to_json}"
     else
-      # Log analytics event for background processing or server-side tracking
+      # Background job or other context - just log it
       Rails.logger.info "[Analytics] Event: #{event_name}, Parameters: #{sanitized_params.to_json}"
     end
   end
@@ -190,6 +197,23 @@ module AnalyticsHelper
       page_name: page_name,
       load_time_ms: load_time_ms
     })
+  end
+
+  # Render queued analytics events from session
+  def render_queued_analytics_events
+    return unless defined?(session) && session[:pending_analytics_events].present?
+
+    events = session[:pending_analytics_events]
+    session.delete(:pending_analytics_events) # Clear the queue
+
+    javascript_tag nonce: content_security_policy_nonce do
+      events.map do |event_data|
+        # Handle both symbol and string keys (Rails session serialization may convert symbols to strings)
+        event_name = event_data[:event] || event_data['event']
+        params = event_data[:params] || event_data['params'] || {}
+        "gtag('event', '#{event_name}', #{params.to_json});"
+      end.join("\n")
+    end
   end
 
   # Page Performance Tracking
