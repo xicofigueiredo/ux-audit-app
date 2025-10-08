@@ -5,10 +5,6 @@ class PagesController < ApplicationController
   end
 
   def demo
-    # Show the specific demo audit (ID 5) for non-authenticated users
-    @audit = VideoAudit.find(5)
-  rescue ActiveRecord::RecordNotFound
-    # Fallback if the demo audit doesn't exist
-    redirect_to root_path, alert: "Demo not available at the moment."
+    # Static demo page - no database dependency
   end
 end 
