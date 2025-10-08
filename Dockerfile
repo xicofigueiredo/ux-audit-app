@@ -34,7 +34,7 @@ COPY . .
 RUN bundle exec bootsnap precompile app/ lib/
 
 # Precompile assets during build for production
-RUN SECRET_KEY_BASE_DUMMY=1 OPENAI_API_KEY=dummy ./bin/rails assets:precompile
+RUN SECRET_KEY_BASE_DUMMY=1 OPENAI_API_KEY=dummy SMTP_USERNAME=dummy SMTP_PASSWORD=dummy ./bin/rails assets:precompile
 
 
 # Final stage for app image
