@@ -61,7 +61,7 @@ class VideoAuditsController < ApplicationController
       redirect_to video_audit_path(@audit)
     else
       track_video_upload_error('validation_failed', @audit.errors.full_messages.join(', '))
-      @audits = VideoAudit.all
+      @audits = current_user.video_audits.order(created_at: :desc)
       flash.now[:alert] = "Please select a valid video file to upload."
       render :index
     end
