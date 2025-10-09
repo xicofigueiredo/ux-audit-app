@@ -29,7 +29,7 @@ class UxKnowledgeDocumentsController < ApplicationController
 
   def reindex
     if request.post?
-      UxKnowledgeIndexingService.new.reindex_all(File.expand_path("~/Desktop/UX-huristics"))
+      UxKnowledgeIndexingService.new.reindex_all(Rails.root.join('lib/ux_knowledge/pdfs').to_s)
       redirect_to ux_knowledge_documents_path, notice: "Knowledge base reindexed successfully!"
     end
   end

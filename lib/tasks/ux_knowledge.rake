@@ -1,7 +1,7 @@
 namespace :ux_knowledge do
   desc "Index UX heuristics PDF files from the specified directory"
   task :index, [:directory_path] => :environment do |task, args|
-    directory_path = args[:directory_path] || File.expand_path("~/Desktop/UX-huristics")
+    directory_path = args[:directory_path] || Rails.root.join('lib/ux_knowledge/pdfs').to_s
 
     unless Dir.exist?(directory_path)
       puts "Error: Directory #{directory_path} does not exist."
@@ -24,7 +24,7 @@ namespace :ux_knowledge do
 
   desc "Reindex all UX knowledge documents (clears existing data)"
   task :reindex, [:directory_path] => :environment do |task, args|
-    directory_path = args[:directory_path] || File.expand_path("~/Desktop/UX-huristics")
+    directory_path = args[:directory_path] || Rails.root.join('lib/ux_knowledge/pdfs').to_s
 
     unless Dir.exist?(directory_path)
       puts "Error: Directory #{directory_path} does not exist."
