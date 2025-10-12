@@ -104,7 +104,14 @@
   <header class="analysis-header">
     <div class="header-left">
       <a href="/" class="back-link">&larr; Back</a>
-      <h1 class="report-title">Workflow Report</h1>
+      <div class="header-title-container">
+        <h1 class="report-title">
+          Workflow Report: <%= @audit.parsed_llm_response.dig('workflowSummary', 'workflowtitle') || @audit.parsed_llm_response.dig('workflowSummary', 'userGoal') || 'Analysis' %>
+        </h1>
+        <p class="report-subtitle">
+          App: AI Talk Coach • Uploaded <%= @audit.created_at.strftime('%b %d, %Y') %> • Duration: 00:<%= '%02d' % (@audit.frames&.length || 25) %>
+        </p>
+      </div>
     </div>
     <div class="header-right">
       <button class="filter-btn" id="filter-btn">
@@ -171,18 +178,24 @@
           <div class="stat-value low"><%= stats[:low] %></div>
         </div>
 
+        <!-- AI Summary - Full Width -->
+        <% if @audit.parsed_llm_response.dig('workflowSummary', 'summary') %>
+          <div class="ai-summary-container">
+            <h4 class="ai-summary-heading">AI Summary</h4>
+            <p class="ai-summary-text"><%= @audit.parsed_llm_response.dig('workflowSummary', 'summary') %></p>
+          </div>
+        <% end %>
+
         <!-- Timeline Bar - Full Width -->
         <div class="timeline-bar-container">
           <h4 class="timeline-heading">Timeline</h4>
           <div class="timeline-ranges">
             <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
               <% if issue["frameReference"] %>
-                <button class="timeline-range-btn" data-issue-index="<%= idx %>">
-                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 3px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                  <%= frame_range_to_time(issue["frameReference"]) %>
-                </button>
+                <div class="timeline-dot-container" data-issue-index="<%= idx %>">
+                  <div class="timeline-dot <%= issue['severity'].downcase %>"></div>
+                  <span class="timeline-time"><%= frame_range_to_time(issue["frameReference"]) %></span>
+                </div>
               <% end %>
             <% end %>
           </div>
@@ -223,6 +236,15 @@
 
     <!-- Main Content Area -->
     <main class="analysis-main">
+      <!-- Show All Button (hidden by default) -->
+      <div id="show-all-container" style="display: none; margin-bottom: 20px;">
+        <button id="show-all-btn" class="show-all-btn">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 6px;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+          Show All Issues
+        </button>
+      </div>
       <div class="tab-content overview-tab active">
         <% if @audit.completed? || @audit.status == 'partial' %>
           <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
@@ -310,6 +332,31 @@
                   </div>
                 </div>
               <% end %>
+            </div>
+
+            <!-- Next Steps Section -->
+            <div class="next-steps-section">
+              <h3 class="next-steps-heading">Next Steps</h3>
+              <ul class="next-steps-list">
+                <% @audit.parsed_llm_response["identifiedIssues"].group_by { |i| i["severity"] }.each do |severity, issues| %>
+                  <% if severity == "High" %>
+                    <% issues.each do |issue| %>
+                      <li>Fix <%= issue["painPointTitle"].downcase %></li>
+                    <% end %>
+                  <% end %>
+                <% end %>
+                <% medium_issues = @audit.parsed_llm_response["identifiedIssues"].select { |i| i["severity"] == "Medium" } %>
+                <% if medium_issues.any? %>
+                  <li>Review and address medium severity issues</li>
+                <% end %>
+                <% if @audit.parsed_llm_response.dig('workflowSummary', 'workflowSteps')&.any? %>
+                  <li>Consider workflow optimization opportunities</li>
+                <% end %>
+              </ul>
+              <div class="next-steps-actions">
+                <button class="jira-epic-btn" id="jira-epic-btn">Generate Jira Epic</button>
+                <button class="design-task-btn" id="design-task-btn">Create Design Task</button>
+              </div>
             </div>
           <% else %>
             <div class="error-message">
@@ -420,11 +467,23 @@
 .back-link:hover {
   color: #4f46e5;
 }
+.header-title-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .report-title {
   font-size: 1.25rem;
   font-weight: 600;
   color: #1e293b;
   margin: 0;
+  line-height: 1.3;
+}
+.report-subtitle {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 400;
 }
 .header-right {
   display: flex;
@@ -491,13 +550,38 @@
 .stat-value.medium { color: #f59e0b; }
 .stat-value.low { color: #2563eb; }
 
+/* AI Summary Section */
+.ai-summary-container {
+  grid-column: 1 / -1;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-top: 4px;
+}
+
+.ai-summary-heading {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+  letter-spacing: 0.3px;
+}
+
+.ai-summary-text {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
 /* Timeline Bar - Full Width */
 .timeline-bar-container {
   grid-column: 1 / -1;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 16px 20px;
   margin-top: 4px;
 }
 
@@ -505,45 +589,74 @@
   font-size: 0.8rem;
   font-weight: 600;
   color: #1e293b;
-  margin: 0 0 8px 0;
+  margin: 0 0 16px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .timeline-ranges {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
+  align-items: flex-start;
+  gap: 0;
+  position: relative;
+  padding: 8px 0;
 }
 
-.timeline-range-btn {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s;
+.timeline-ranges::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #e5e7eb;
+  z-index: 0;
+}
+
+.timeline-dot-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 60px;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+
+.timeline-dot.high {
+  background: #dc2626;
+}
+
+.timeline-dot.medium {
+  background: #f59e0b;
+}
+
+.timeline-dot.low {
+  background: #2563eb;
+}
+
+.timeline-dot-container:hover .timeline-dot {
+  transform: scale(1.3);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.timeline-time {
+  font-size: 0.7rem;
+  color: #6b7280;
   font-family: monospace;
-}
-
-.timeline-range-btn:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #2563eb;
-}
-
-.timeline-range-btn svg {
-  transition: transform 0.2s;
-}
-
-.timeline-range-btn:hover svg {
-  transform: translateX(2px);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Workflow Analysis Section */
@@ -954,6 +1067,75 @@
 .user-goal-text {
   margin: 0 0 12px 0;
   font-size: 1.08rem;
+}
+
+/* Next Steps Section */
+.next-steps-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.next-steps-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+.next-steps-list {
+  list-style: disc;
+  padding-left: 24px;
+  margin: 0 0 20px 0;
+}
+
+.next-steps-list li {
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.next-steps-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.jira-epic-btn,
+.design-task-btn {
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.jira-epic-btn {
+  background: #1e293b;
+  color: white;
+}
+
+.jira-epic-btn:hover {
+  background: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.design-task-btn {
+  background: #fff;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.design-task-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 /* Mobile Responsive Styles */
@@ -1392,6 +1574,32 @@
   transform: scale(1.05);
   transition: transform 0.2s;
 }
+
+/* Show All Button */
+.show-all-btn {
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.show-all-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.show-all-btn:active {
+  transform: translateY(0);
+}
 </style>
 
 <script nonce="<%= content_security_policy_nonce %>">
@@ -1478,6 +1686,8 @@ function trackJiraIntegration(auditId, idx) {
 // Highlight feedback card when timeline step is clicked
 function highlightCard(idx) {
   const cards = document.querySelectorAll('.issue-card');
+  const showAllContainer = document.getElementById('show-all-container');
+
   cards.forEach((card, i) => {
     card.classList.remove('highlighted');
     if (idx === 'all' || idx === undefined) {
@@ -1490,6 +1700,15 @@ function highlightCard(idx) {
       card.style.display = 'none';
     }
   });
+
+  // Show or hide the "Show All Issues" button
+  if (showAllContainer) {
+    if (idx === 'all' || idx === undefined) {
+      showAllContainer.style.display = 'none';
+    } else {
+      showAllContainer.style.display = 'block';
+    }
+  }
 
   // Track timeline navigation
   if (typeof gtag !== 'undefined' && idx !== 'all' && idx !== undefined) {
@@ -1650,9 +1869,9 @@ document.querySelectorAll('.severity-info-icon').forEach(function(button) {
   });
 });
 
-// Timeline range button click handlers
-document.querySelectorAll('.timeline-range-btn').forEach(function(button) {
-  button.addEventListener('click', function() {
+// Timeline dot container click handlers
+document.querySelectorAll('.timeline-dot-container').forEach(function(container) {
+  container.addEventListener('click', function() {
     const idx = parseInt(this.getAttribute('data-issue-index'), 10);
     highlightCard(idx);
   });
@@ -1782,5 +2001,28 @@ document.querySelectorAll('.screenshot-thumbnail').forEach(function(thumbnail) {
     }
   });
 });
+
+// Next Steps button handlers
+const jiraEpicBtn = document.getElementById('jira-epic-btn');
+if (jiraEpicBtn) {
+  jiraEpicBtn.addEventListener('click', function() {
+    alert('Jira Epic generation coming soon!');
+  });
+}
+
+const designTaskBtn = document.getElementById('design-task-btn');
+if (designTaskBtn) {
+  designTaskBtn.addEventListener('click', function() {
+    alert('Design Task creation coming soon!');
+  });
+}
+
+// Show All Issues button handler
+const showAllBtn = document.getElementById('show-all-btn');
+if (showAllBtn) {
+  showAllBtn.addEventListener('click', function() {
+    highlightCard('all');
+  });
+}
 </script>
 <% end %>
