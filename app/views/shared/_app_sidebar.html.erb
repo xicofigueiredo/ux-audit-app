@@ -1,0 +1,41 @@
+<!-- App Sidebar Navigation -->
+<div class="w-64 bg-white shadow-sm flex flex-col py-6">
+  <div class="flex items-center px-6 mb-8">
+    <img src="/logo.svg" alt="UX Audit App" class="w-9 h-9 rounded-lg mr-3">
+    <span class="text-xl font-extrabold text-gray-800 tracking-tight">UX Audit App</span>
+  </div>
+  <nav class="flex-1 px-4 space-y-2">
+    <%= link_to projects_path, class: "flex items-center px-4 py-3 #{current_page?(projects_path) ? 'text-purple-600 bg-purple-100' : 'text-gray-700 hover:bg-gray-100'} rounded-lg font-medium" do %>
+      <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V4zM14 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V4zM4 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+      Projects
+    <% end %>
+    <%= link_to video_audits_path, class: "flex items-center px-4 py-3 #{current_page?(video_audits_path) ? 'text-purple-600 bg-purple-100' : 'text-gray-700 hover:bg-gray-100'} rounded-lg font-medium" do %>
+      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M17 4v16M7 4l10 8-10 8"></path></svg>
+      Upload Video
+    <% end %>
+    <%= link_to ux_knowledge_documents_path, class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
+      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+      Knowledge Base
+    <% end %>
+    <span class="flex items-center px-4 py-3 text-gray-400 rounded-lg font-medium cursor-not-allowed">
+      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0A5.002 5.002 0 0112 16a5.002 5.002 0 014.644 2.143m6.356-2.143A7.002 7.002 0 0012 14a7.002 7 0 00-6.356 2.143M12 16l2.354-2.354M12 16l-2.354-2.354"></path></svg>
+      Team <span class="text-xs ml-2 bg-gray-200 text-gray-500 px-2 py-1 rounded">Soon</span>
+    </span>
+    <span class="flex items-center px-4 py-3 text-gray-400 rounded-lg font-medium cursor-not-allowed">
+      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+      Billing <span class="text-xs ml-2 bg-gray-200 text-gray-500 px-2 py-1 rounded">Soon</span>
+    </span>
+  </nav>
+  <div class="px-4 py-6 border-t border-gray-200">
+    <%= link_to "#", class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
+      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.319.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.319-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.319-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.319 2.37-2.37.26-.158.5-.34.72-.56z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+      Settings
+    <% end %>
+    <% if respond_to?(:destroy_user_session_path) %>
+      <%= button_to destroy_user_session_path, method: :delete, class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium w-full text-left bg-transparent border-0 cursor-pointer", form: { class: "w-full" } do %>
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        Sign Out
+      <% end %>
+    <% end %>
+  </div>
+</div>

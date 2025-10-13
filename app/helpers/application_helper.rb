@@ -62,7 +62,7 @@ module ApplicationHelper
     stats
   end
 
-  # Extract concise evidence snippet from issue description
+  # Extract evidence from issue description (full text, no truncation)
   def extract_evidence(issue_description)
     return "" if issue_description.blank?
 
@@ -74,13 +74,86 @@ module ApplicationHelper
       .gsub(/^Heuristic violated:.*?\.\s*/i, '')                             # "Heuristic violated: X."
       .strip
 
-    # Get first sentence or first ~120 characters
-    first_sentence = text.split(/\.\s+/).first
+    # Return full text without truncation
+    text
+  end
 
-    if first_sentence && first_sentence.length > 120
-      truncate(first_sentence, length: 120, separator: ' ')
+  # Check if we're on localhost (for development)
+  def is_localhost?
+    request.host == 'localhost' || request.host.start_with?('127.0.0.1')
+  end
+
+  # Generate URL for app subdomain
+  def app_subdomain_url(path = nil)
+    protocol = request.protocol
+    port = [80, 443].include?(request.port) ? '' : ":#{request.port}"
+
+    if is_localhost?
+      # On localhost, just use localhost without subdomain trickery
+      base = "#{protocol}localhost#{port}"
     else
-      first_sentence
+      domain = request.domain
+      base = "#{protocol}app.#{domain}#{port}"
     end
+
+    path ? "#{base}#{path}" : base
+  end
+
+  # Generate URL for marketing (root) domain
+  def marketing_url(path = nil)
+    protocol = request.protocol
+    port = [80, 443].include?(request.port) ? '' : ":#{request.port}"
+
+    if is_localhost?
+      # On localhost, just use localhost
+      base = "#{protocol}localhost#{port}"
+    else
+      domain = request.domain.sub('app.', '')
+      base = "#{protocol}#{domain}#{port}"
+    end
+
+    path ? "#{base}#{path}" : base
+  end
+
+  # Generate sign in URL (always goes to marketing domain)
+  def marketing_sign_in_url
+    if is_localhost?
+      new_user_session_path
+    else
+      marketing_url(new_user_session_path)
+    end
+  end
+
+  # Generate sign out redirect URL
+  def after_sign_out_url
+    if is_localhost?
+      root_path
+    else
+      marketing_url
+    end
+  end
+
+  # Generate projects URL (after sign in redirect)
+  def after_sign_in_url
+    if is_localhost?
+      projects_path
+    else
+      app_subdomain_url('/projects')
+    end
+  end
+
+  # Check if currently on marketing domain
+  def on_marketing_domain?
+    request.subdomain.blank? || request.subdomain == 'www'
+  end
+
+  # Check if currently on app subdomain
+  def on_app_subdomain?
+    request.subdomain == 'app'
+  end
+
+  # Smart root path that returns correct path based on context
+  def app_root_path
+    on_app_subdomain? ? projects_path : root_path
   end
 end

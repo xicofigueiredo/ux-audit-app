@@ -1,5 +1,8 @@
 class UxKnowledgeDocumentsController < ApplicationController
   include AnalyticsHelper
+  layout :determine_layout
+  skip_before_action :authenticate_user!, only: [:index, :show, :search]
+
   def index
     @total_documents = UxKnowledgeDocument.count
     @files_count = UxKnowledgeDocument.distinct.count(:file_name)
@@ -31,6 +34,17 @@ class UxKnowledgeDocumentsController < ApplicationController
     if request.post?
       UxKnowledgeIndexingService.new.reindex_all(Rails.root.join('lib/ux_knowledge/pdfs').to_s)
       redirect_to ux_knowledge_documents_path, notice: "Knowledge base reindexed successfully!"
+    end
+  end
+
+  private
+
+  def determine_layout
+    # Use marketing layout if on marketing domain, otherwise use application layout
+    if request.subdomain.blank? || request.subdomain == 'www'
+      'marketing'
+    else
+      'application'
     end
   end
 end

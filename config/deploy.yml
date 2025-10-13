@@ -13,10 +13,13 @@ servers:
       memory: "2g"
       cpus: "1.0"
     labels:
-      # Router: match your host on both :80 and :443 and enable TLS at the proxy
-      traefik.http.routers.uxauditapp-web.rule: Host(`uxauditapp.com`)
+      # Router: match both uxauditapp.com and app.uxauditapp.com on :80 and :443 with TLS
+      traefik.http.routers.uxauditapp-web.rule: Host(`uxauditapp.com`) || Host(`www.uxauditapp.com`) || Host(`app.uxauditapp.com`)
       traefik.http.routers.uxauditapp-web.entrypoints: web,websecure
       traefik.http.routers.uxauditapp-web.tls: "true"
+      traefik.http.routers.uxauditapp-web.tls.certresolver: letsencrypt
+      traefik.http.routers.uxauditapp-web.tls.domains[0].main: uxauditapp.com
+      traefik.http.routers.uxauditapp-web.tls.domains[0].sans: www.uxauditapp.com,app.uxauditapp.com
 
       # Service: Traefik talks HTTP to Puma on 3000 (no TLS to the app!)
       traefik.http.services.uxauditapp-web.loadbalancer.server.port: "3000"

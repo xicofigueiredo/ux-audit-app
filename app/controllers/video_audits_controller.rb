@@ -1,6 +1,8 @@
 # app/controllers/video_audits_controller.rb
 class VideoAuditsController < ApplicationController
   include AnalyticsHelper
+  layout false
+
   def index
     @audits = current_user.video_audits.order(created_at: :desc)
   end

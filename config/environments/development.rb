@@ -53,6 +53,14 @@ Rails.application.configure do
   # Devise configuration for development
   config.action_mailer.default_url_options = { host: 'localhost', port: 3001 }
 
+  # Allow subdomain routing in development
+  config.hosts << "uxauditapp.local"
+  config.hosts << "www.uxauditapp.local"
+  config.hosts << "app.uxauditapp.local"
+  config.hosts << /.*\.uxauditapp\.local/
+  # Allow any localhost subdomain patterns for development
+  config.hosts << /.*\.localhost/
+
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 

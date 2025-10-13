@@ -1,5 +1,7 @@
 class ProjectsController < ApplicationController
+  layout false
+
   def index
-    @audits = VideoAudit.all.order(created_at: :desc) # Assuming VideoAudit model exists
+    @audits = current_user.video_audits.order(created_at: :desc)
   end
 end 

@@ -8,6 +8,18 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # Override Devise's authenticate_user! to handle subdomain redirects
+  def authenticate_user!
+    unless user_signed_in?
+      # If we're on the app subdomain and not authenticated, redirect to marketing domain sign in
+      if request.subdomain == 'app'
+        redirect_to helpers.marketing_sign_in_url
+        return
+      end
+    end
+    super
+  end
+
   def handle_standard_error(exception)
     Rails.logger.error "Application Error: #{exception.message}"
     Rails.logger.error exception.backtrace.join("\n")

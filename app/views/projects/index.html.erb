@@ -1,39 +1,19 @@
-<div class="flex h-screen bg-gray-100">
-  <!-- Sidebar -->
-  <div class="w-64 bg-white shadow-sm flex flex-col py-6">
-    <div class="flex items-center px-6 mb-8">
-      <img src="/logo.svg" alt="UX Audit App" class="w-9 h-9 rounded-lg mr-3">
-      <span class="text-xl font-extrabold text-gray-800 tracking-tight">UX Audit App</span>
-    </div>
-    <nav class="flex-1 px-4 space-y-2">
-      <%= link_to projects_path, class: "flex items-center px-4 py-3 text-purple-600 bg-purple-100 rounded-lg font-semibold", aria: { current: 'page' } do %>
-        <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V4zM14 4a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V4zM4 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 14a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-        Projects
-      <% end %>
-      <%= link_to video_audits_path, class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M17 4v16M7 4l10 8-10 8"></path></svg>
-        Upload Video
-      <% end %>
-      <span class="flex items-center px-4 py-3 text-gray-400 rounded-lg font-medium cursor-not-allowed">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0A5.002 5.002 0 0112 16a5.002 5.002 0 014.644 2.143m6.356-2.143A7.002 7.002 0 0012 14a7.002 7 0 00-6.356 2.143M12 16l2.354-2.354M12 16l-2.354-2.354"></path></svg>
-        Team <span class="text-xs ml-2 bg-gray-200 text-gray-500 px-2 py-1 rounded">Soon</span>
-      </span>
-      <span class="flex items-center px-4 py-3 text-gray-400 rounded-lg font-medium cursor-not-allowed">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-        Billing <span class="text-xs ml-2 bg-gray-200 text-gray-500 px-2 py-1 rounded">Soon</span>
-      </span>
-      <%= link_to root_path, class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9.247a4.75 4.75 0 015.273-4.447M11 11.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM11 11.5v-1.5M11 11.5h-1.5M12 11.5l-1.5 1.5m1.5-1.5V16m-1.5-1.5l1.5 1.5m-1.5-1.5h1.5"></path></svg>
-        Help & FAQ
-      <% end %>
-    </nav>
-    <div class="px-4 py-6 border-t border-gray-200">
-      <%= link_to "#", class: "flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg font-medium" do %>
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.319.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.319-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.319-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.319 2.37-2.37.26-.158.5-.34.72-.56z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        Settings
-      <% end %>
-    </div>
-  </div>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Projects - UX Audit App</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <%= stylesheet_link_tag "application" %>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-100">
+      <!-- Sidebar -->
+      <%= render 'shared/app_sidebar' %>
   <!-- Main Content -->
   <div class="flex-1 flex flex-col overflow-hidden">
     <!-- Top Bar -->
@@ -301,4 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-</script> 
+</script>
+    </div>
+  </body>
+</html> 

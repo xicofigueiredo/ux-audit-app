@@ -1,4 +1,40 @@
-<%# app/views/video_audits/show.html.erb %>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Audit Results - UX Audit App</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <%= stylesheet_link_tag "application" %>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-100">
+      <!-- Sidebar -->
+      <%= render 'shared/app_sidebar' %>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Bar -->
+        <header class="flex justify-between items-center px-6 py-4 bg-white border-b shadow-sm">
+          <div class="flex items-center space-x-4">
+            <%= link_to projects_path, class: "text-gray-600 hover:text-purple-600 flex items-center" do %>
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+              Back to Projects
+            <% end %>
+          </div>
+          <div class="flex items-center space-x-4">
+            <% if user_signed_in? %>
+              <span class="text-gray-700 text-sm">Welcome, <%= current_user.email.split('@').first %></span>
+              <%= button_to "Sign out", destroy_user_session_path, method: :delete, class: "text-gray-700 hover:text-purple-600 bg-transparent border border-gray-300 px-4 py-2 rounded-lg font-medium transition" %>
+            <% end %>
+          </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto">
 
 <% if @audit.status == 'pending' %>
   <div class="analysis-app-container" style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem;">
@@ -2026,3 +2062,8 @@ if (showAllBtn) {
 }
 </script>
 <% end %>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

@@ -46,6 +46,7 @@ module Llm
           workflowSummary: {
             workflowtitle: "E-commerce checkout flow",
             userGoal: "Complete a purchase transaction",
+            summary: "Most friction occurred during payment information entry (00:05-00:13). The main issues concern unclear form validation and lack of visual feedback. Addressing these will likely improve checkout completion rates and reduce user frustration.",
             workflowSteps: [
               "Add items to cart",
               "Proceed to checkout",
@@ -84,6 +85,7 @@ module Llm
           workflowSummary: {
             workflowtitle: "Mobile app onboarding flow",
             userGoal: "Complete initial app setup and account creation",
+            summary: "Most friction occurred during permission requests and account creation (00:00-00:08). The main issues concern aggressive permission dialogs and lack of context. Addressing these will likely improve onboarding completion rates and first-time user experience.",
             workflowSteps: [
               "Welcome screen and permissions",
               "Account creation form",
@@ -162,6 +164,10 @@ module Llm
                   type: "string",
                   description: "A clear description of what the user is trying to accomplish"
                 },
+                summary: {
+                  type: "string",
+                  description: "A 2-3 sentence executive summary of the UX analysis. Format: 'Most friction occurred during [stage] ([time range]). The main issues concern [key topics like visibility, feedback, clarity]. Addressing these will likely improve [expected outcome like conversion rates, user confidence, task completion].'"
+                },
                 workflowSteps: {
                   type: "array",
                   items: { type: "string" },
@@ -177,7 +183,7 @@ module Llm
                   description: "The business criticality of this workflow. Business-Critical: checkout, payment, signup, login. High-Impact: onboarding, core features, search. Standard: settings, profile, preferences. Low-Impact: help pages, about pages"
                 }
               },
-              required: ["workflowtitle", "userGoal", "workflowSteps", "totalFramesAnalyzed", "workflowCriticality"]
+              required: ["workflowtitle", "userGoal", "summary", "workflowSteps", "totalFramesAnalyzed", "workflowCriticality"]
             },
             identifiedIssues: {
               type: "array",
@@ -301,9 +307,12 @@ module Llm
 
         ### OUTPUT FORMAT ###
         Use the provided function to return structured analysis with:
-        - `workflowSummary`: Overall workflow analysis
+        - `workflowSummary`: Overall workflow analysis including a 2-3 sentence executive summary
         - `identifiedIssues`: Array of specific UX issues with impact scores
         - `analysisMetadata`: Confidence score and processing information
+
+        **IMPORTANT**: The `summary` field in `workflowSummary` should be a concise 2-3 sentence overview following this format:
+        "Most friction occurred during [stage/action] ([time range like 00:05-00:13]). The main issues concern [key themes like visibility, feedback clarity, error handling]. Addressing these will likely improve [outcome like user confidence, task completion, conversion rates]."
 
         #{few_shot_example_text}
       PROMPT
@@ -346,8 +355,11 @@ module Llm
 
         ### OUTPUT FORMAT ###
         Respond with a valid JSON object containing:
-        - `workflowSummary`: Overall workflow analysis
+        - `workflowSummary`: Overall workflow analysis including a 2-3 sentence executive summary
         - `identifiedIssues`: Array of specific UX issues found
+
+        **IMPORTANT**: Include a `summary` field in `workflowSummary` with this format:
+        "Most friction occurred during [stage] ([time range]). The main issues concern [key themes]. Addressing these will likely improve [outcome]."
 
         ### ANALYSIS FOCUS ###
         - User interaction patterns
