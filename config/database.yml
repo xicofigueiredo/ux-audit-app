@@ -79,8 +79,4 @@ test:
 #
 production:
   <<: *default
-  database: ux_audit_app_production
-  username: ux_audit_app
-  password: databasepassord.,
-  host: 143.110.169.251
-  port: 5432
+  url: <%= ENV['DATABASE_URL'] %>
