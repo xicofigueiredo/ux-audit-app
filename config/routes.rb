@@ -1,5 +1,3 @@
-require_relative '../lib/constraints/subdomain_constraint'
-
 Rails.application.routes.draw do
   # Health endpoints (available on all domains)
   get "up" => "rails/health#show", as: :rails_health_check
@@ -12,7 +10,7 @@ Rails.application.routes.draw do
   end
 
   # Web App Routes (app.uxauditapp.com or app.uxauditapp.local)
-  constraints(SubdomainConstraint.new('app')) do
+  constraints(Constraints::SubdomainConstraint.new('app')) do
     # Authenticated application routes
     resources :video_audits, only: [:create, :show, :index, :destroy]
     resources :projects, only: [:index]
@@ -34,7 +32,7 @@ Rails.application.routes.draw do
   end
 
   # Marketing Site Routes (uxauditapp.com, www.uxauditapp.com, and localhost in development)
-  constraints(SubdomainConstraint.new(nil, 'www')) do
+  constraints(Constraints::SubdomainConstraint.new(nil, 'www')) do
     # Devise authentication (sign in/sign up on marketing domain)
     devise_for :users, controllers: {
       sessions: 'users/sessions',
