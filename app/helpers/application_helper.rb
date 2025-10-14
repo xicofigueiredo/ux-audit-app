@@ -118,8 +118,14 @@ module ApplicationHelper
   # Generate sign in URL (always goes to marketing domain)
   def marketing_sign_in_url
     if is_localhost?
-      new_user_session_path
+      # On localhost, just use the path (no cross-domain redirect)
+      begin
+        new_user_session_path
+      rescue
+        "/users/sign_in"
+      end
     else
+      # In production, redirect to marketing domain
       marketing_url(new_user_session_path)
     end
   end
@@ -127,17 +133,45 @@ module ApplicationHelper
   # Generate sign out redirect URL
   def after_sign_out_url
     if is_localhost?
-      root_path
+      # On localhost, use the root path (marketing home)
+      begin
+        root_path
+      rescue
+        # Fallback if root_path is not available
+        "/"
+      end
     else
       marketing_url
+    end
+  end
+
+  # Safe root path helper that works in all contexts
+  def safe_root_path
+    if is_localhost?
+      begin
+        # Try to use root_path on localhost
+        return root_path if defined?(root_path)
+      rescue
+        # Fallback to "/"
+      end
+      "/"
+    else
+      # In production, use appropriate root based on subdomain
+      on_app_subdomain? ? projects_path : marketing_root_path
     end
   end
 
   # Generate projects URL (after sign in redirect)
   def after_sign_in_url
     if is_localhost?
-      projects_path
+      # On localhost, don't redirect to subdomain - just go to projects
+      begin
+        projects_path
+      rescue
+        "/projects"
+      end
     else
+      # In production, redirect to app subdomain
       app_subdomain_url('/projects')
     end
   end

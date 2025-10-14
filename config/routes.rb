@@ -61,24 +61,14 @@ Rails.application.routes.draw do
 
   # Fallback routes for development on localhost (no subdomain constraints)
   # These will only match if no constrained routes matched above
-  unless Rails.env.production?
-    # Marketing pages (accessible without subdomain on localhost)
-    root "pages#home"
-    get "demo" => "pages#demo", as: :fallback_demo unless defined?(demo_path)
-    post "feedback" => "feedback#create", as: :fallback_feedback unless defined?(feedback_path)
-
-    # Public knowledge base
-    resources :ux_knowledge_documents, only: [:index, :show], as: :fallback_ux_knowledge_documents do
-      collection do
-        get :search
-      end
-    end
-
+  # This allows localhost:3001 to work like a full app without needing subdomains
+  if Rails.env.development?
+    # Only define these if we haven't already (i.e., we're on plain localhost, not constrained routes)
     # App routes (accessible without subdomain on localhost)
-    resources :video_audits, only: [:create, :show, :index, :destroy], as: :fallback_video_audits
-    resources :projects, only: [:index], as: :fallback_projects
+    resources :video_audits, only: [:create, :show, :index, :destroy] unless defined?(video_audits_path)
+    resources :projects, only: [:index] unless defined?(projects_path)
 
     # Settings (accessible without subdomain on localhost)
-    get 'settings', to: 'settings#index', as: :fallback_settings unless defined?(settings_path)
+    get 'settings', to: 'settings#index' unless defined?(settings_path)
   end
 end

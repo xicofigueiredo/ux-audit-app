@@ -8,24 +8,30 @@ module Constraints
 
     def matches?(request)
       # Extract subdomain from request
-      subdomain = request.subdomain.presence
+      # Note: request.subdomain returns empty string "" on localhost, not nil
+      subdomain = request.subdomain
+      subdomain = nil if subdomain.blank?
 
       # Determine if we're in a local development environment
       is_localhost = request.host == 'localhost' || request.host.start_with?('127.0.0.1')
       is_local_domain = request.host.end_with?('.local')
 
       if Rails.env.development? && (is_localhost || is_local_domain)
-        # Development behavior: localhost with no subdomain is treated as marketing (nil)
-        # For localhost or .local domains:
-        # - nil/www subdomain matches root marketing site
-        # - 'app' subdomain matches app site
+        # Development behavior:
+        # Plain localhost (no subdomain) should ONLY match marketing routes
+        # app.localhost (with 'app' subdomain) should ONLY match app routes
+
         @subdomains.any? do |s|
           case s
           when nil, 'www'
-            # Match marketing domain: no subdomain or 'www'
-            subdomain.nil? || subdomain == 'www'
+            # Match marketing domain: ONLY when there's no subdomain
+            # This prevents matching app.localhost
+            subdomain.nil?
+          when 'app'
+            # Match app subdomain: ONLY when subdomain is explicitly 'app'
+            subdomain == 'app'
           else
-            # Match specific subdomain (e.g., 'app')
+            # Match any other specific subdomain
             s == subdomain
           end
         end
