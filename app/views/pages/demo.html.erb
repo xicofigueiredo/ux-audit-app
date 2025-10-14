@@ -1,64 +1,90 @@
-<%# Static demo page - all data hardcoded from VideoAudit #3 %>
+<%# Static demo page - all data hardcoded from VideoAudit #5 %>
 
 <%
   # Static demo data - no database dependency
-  demo_audit_id = 3
+  demo_audit_id = 5
   demo_audit = {
     "workflowSummary" => {
-      "workflowtitle" => "Speech Improvement Workflow",
-      "userGoal" => "The user aims to improve speech by reducing filler words through guided exercises.",
+      "workflowtitle" => "Sign-In and Project Management Workflow",
+      "userGoal" => "The user wants to sign in to their account to manage and view their projects.",
       "workflowSteps" => [
-        "Accessing the dashboard",
-        "Viewing issues and recommendations",
-        "Engaging in a practice drill",
-        "Recording and reviewing progress"
+        "Landing Page Access",
+        "Sign In Attempt",
+        "Successful Login",
+        "Access Project Dashboard",
+        "Navigate Back to Landing Page"
       ],
-      "workflowCriticality" => "Standard"
+      "workflowCriticality" => "Business-Critical"
     },
     "identifiedIssues" => [
       {
-        "frameReference" => "Frames 21-23",
-        "painPointTitle" => "Lack of Contextual Guidance",
+        "frameReference" => "Frames 1-5",
+        "painPointTitle" => "Unclear Sign-In Prompt Feedback",
         "severity" => "Medium",
-        "issueDescription" => "This violates Nielsen's Heuristic #7: Flexibility and efficiency of use. The screen displays filler word issues but lacks contextual guidance or examples, making it difficult to understand how to improve.",
+        "issueDescription" => "Violates Nielsen's Heuristic #1: Visibility of System Status. The initial frames show a navigation menu where 'Sign In' is highlighted in place of a more clear prompt. There's no immediate indication that the user needs to sign in for managing projects.",
         "recommendations" => [
-          "Include contextual examples of correct versus incorrect usage for each identified issue.",
-          "Provide tooltips or info buttons that explain the impact of specific filler words on speech quality."
+          "Add a visible 'Sign In Required' message on areas that require authentication.",
+          "Include a tooltip on 'My Projects' explaining that sign-in is necessary."
         ],
-        "heuristicViolated" => "Nielsen's Heuristic #7: Flexibility and efficiency of use"
+        "heuristicViolated" => "Nielsen's Heuristic #1: Visibility of System Status"
       },
       {
-        "frameReference" => "Frames 24-26",
-        "painPointTitle" => "Inconsistent Visual Feedback",
-        "severity" => "Low",
-        "issueDescription" => "Conflicts with Shneiderman's Golden Rule of consistency. The 'Start 30s Drill' button appears identical in multiple frames, whether or not it has been interacted with.",
-        "recommendations" => [
-          "Change the button color or label once clicked to indicate engagement and progress visually.",
-          "Provide a subtle animation or progress indicator during the drill to convey activity."
-        ],
-        "heuristicViolated" => "Shneiderman's Golden Rule of consistency"
-      },
-      {
-        "frameReference" => "Frames 27-29",
-        "painPointTitle" => "Redundant Navigation Elements",
-        "severity" => "Medium",
-        "issueDescription" => "Violates Nielsen's Heuristic #8: Aesthetic and minimalist design. The navigation elements are repeated unnecessarily across similar sections, cluttering the interface.",
-        "recommendations" => [
-          "Consolidate navigation elements to a single location to reduce repetition.",
-          "Use collapsible menus or tabs to streamline access to different features."
-        ],
-        "heuristicViolated" => "Nielsen's Heuristic #8: Aesthetic and minimalist design"
-      },
-      {
-        "frameReference" => "Frames 30-34",
-        "painPointTitle" => "Confusing Metrics Presentation",
+        "frameReference" => "Frames 6-14",
+        "painPointTitle" => "Error Message Efficiency",
         "severity" => "High",
-        "issueDescription" => "This violates Nielsen's Heuristic #6: Recognition rather than recall. The metrics for 'Filler Words' and 'Pace' are not clearly defined or explained, leading to user confusion about what these metrics indicate.",
+        "issueDescription" => "Violates Nielsen's Heuristic #5: Error Prevention. After clicking 'My Projects' without signing in, the user is redirected to a login form and shown a banner error message, which might not be immediately visible due to banner blindness.",
         "recommendations" => [
-          "Add explanations or hover-over tooltips for each metric to outline its significance and method of calculation.",
-          "Provide a quick guide or help section detailing how users can interpret and improve these metrics."
+          "Use a more prominent modal popup warning before redirecting to the sign-in page.",
+          "Ensure the error message is more visible by changing its color or placement."
         ],
-        "heuristicViolated" => "Nielsen's Heuristic #6: Recognition rather than recall"
+        "heuristicViolated" => "Nielsen's Heuristic #5: Error Prevention"
+      },
+      {
+        "frameReference" => "Frames 15-20",
+        "painPointTitle" => "Inconsistent Navigation Behavior",
+        "severity" => "Medium",
+        "issueDescription" => "Violates Nielsen's Heuristic #4: Consistency and Standards. After signing in, the user navigates back to the home page, where the previous project navigation attempt isn't indicated, and errors lead to inconclusive messages.",
+        "recommendations" => [
+          "Maintain a visible trail or history for easier navigation back to initiated tasks.",
+          "Ensure error messages are relevant and actionable, potentially providing a direct link to navigate users back to where they encountered the issue."
+        ],
+        "heuristicViolated" => "Nielsen's Heuristic #4: Consistency and Standards"
+      },
+      {
+        "frameReference" => "Frames 21-22",
+        "painPointTitle" => "Resource Not Found Error Message",
+        "severity" => "High",
+        "issueDescription" => "This violates the heuristic of 'Error prevention' as the resource was not found. The error message lacks details needed to guide the user in resolving the issue, which could lead to abandonment.",
+        "recommendations" => [
+          "Provide a more descriptive error message with steps to resolve the issue.",
+          "Include a link to a help page or contact support.",
+          "Implement checks to ensure resource paths are valid before attempting access."
+        ],
+        "heuristicViolated" => "Error prevention"
+      },
+      {
+        "frameReference" => "Frames 21-23",
+        "painPointTitle" => "Misleading Button Labels",
+        "severity" => "Medium",
+        "issueDescription" => "This violates Nielsen's heuristic of 'Consistency and standards'. The buttons for 'Start Recording' and 'Upload Media' could be confusing as users might not differentiate their functions clearly.",
+        "recommendations" => [
+          "Use more descriptive labels such as 'Record Now' for clarity.",
+          "Add tooltips explaining the purpose of each button.",
+          "Highlight the primary action button to guide the user's attention."
+        ],
+        "heuristicViolated" => "Nielsen's heuristic of 'Consistency and standards'"
+      },
+      {
+        "frameReference" => "Frame 24",
+        "painPointTitle" => "Lack of Progressive Disclosure During Recording",
+        "severity" => "Low",
+        "issueDescription" => "This conflicts with the principle of 'Visibility of system status'. Once recording begins, users are not given immediate feedback on what is being captured or how long the recording will continue.",
+        "recommendations" => [
+          "Show a clear progress indicator with time elapsed and remaining.",
+          "Provide an option to pause or cancel the recording without losing current progress.",
+          "Include brief instructions or tips for effective recording."
+        ],
+        "heuristicViolated" => "Visibility of system status"
       }
     ]
   }
@@ -113,29 +139,39 @@
   }
 %>
 
-<div class="analysis-app-container">
-  <!-- Header -->
-  <header class="analysis-header">
-    <div class="header-left">
-      <a href="/" class="back-link">&larr; Back</a>
-      <h1 class="report-title">Workflow Report</h1>
-    </div>
-    <div class="header-right">
-      <span class="demo-badge">Demo</span>
-      <button class="filter-btn" id="filter-btn">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-        </svg>
-        Filters
-      </button>
-      <button class="export-btn" id="export-btn">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-        </svg>
-        Export
-      </button>
-    </div>
-  </header>
+<div class="flex h-screen bg-gray-100">
+  <!-- Sidebar -->
+  <%= render 'shared/app_sidebar' %>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Top Bar -->
+    <header class="flex justify-between items-center px-6 py-4 bg-white border-b shadow-sm">
+      <div class="flex items-center space-x-4">
+        <%= link_to root_path, class: "text-gray-600 hover:text-purple-600 flex items-center" do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          Back to Home
+        <% end %>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span class="demo-badge">Demo</span>
+        <button class="filter-btn" id="filter-btn">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+          </svg>
+          Filters
+        </button>
+        <button class="export-btn" id="export-btn">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          Export
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto">
 
   <!-- Demo CTA Banner -->
   <div class="demo-banner">
@@ -269,6 +305,24 @@
                   </svg>
                   <span class="time-label">Time:</span>
                   <span class="time-value"><%= demo_frame_range_to_time(issue["frameReference"]) %></span>
+                </div>
+              <% end %>
+
+              <!-- Screenshot Section -->
+              <% screenshot = @demo_screenshots[idx] %>
+              <% if screenshot && screenshot.image_data.present? %>
+                <div class="issue-screenshot-container" style="margin-bottom: 14px;">
+                  <strong style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: #111827;">Screenshot:</strong>
+                  <div class="screenshot-thumbnail" data-issue-index="<%= idx %>" style="cursor: pointer; position: relative; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; transition: all 0.2s;">
+                    <img src="data:image/jpeg;base64,<%= screenshot.image_data %>"
+                         alt="Issue screenshot"
+                         class="issue-screenshot-img"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         loading="lazy">
+                    <div style="position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px 0 0 0;">
+                      🔍 Click to expand
+                    </div>
+                  </div>
                 </div>
               <% end %>
 
@@ -1385,5 +1439,54 @@ document.addEventListener('DOMContentLoaded', function() {
       window.print();
     });
   }
+
+  // Screenshot expand functionality
+  const screenshotThumbnails = document.querySelectorAll('.screenshot-thumbnail');
+  screenshotThumbnails.forEach(function(thumbnail) {
+    thumbnail.addEventListener('click', function() {
+      const img = this.querySelector('img');
+      if (img) {
+        openScreenshotModal(img.src);
+      }
+    });
+  });
+});
+
+// Screenshot modal functions
+function openScreenshotModal(imageSrc) {
+  const modal = document.getElementById('screenshotModal');
+  const modalImg = document.getElementById('modalScreenshotImg');
+  if (modal && modalImg) {
+    modalImg.src = imageSrc;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeScreenshotModal() {
+  const modal = document.getElementById('screenshotModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+}
+
+// Close on ESC key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeScreenshotModal();
+  }
 });
 </script>
+
+<!-- Screenshot Modal -->
+<div id="screenshotModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; padding: 20px;" onclick="closeScreenshotModal()">
+  <button onclick="closeScreenshotModal()" style="position: absolute; top: 20px; right: 20px; background: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #374151; z-index: 10000;">
+    &times;
+  </button>
+  <img id="modalScreenshotImg" src="" alt="Screenshot" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px;" onclick="event.stopPropagation()">
+</div>
+
+    </main>
+  </div>
+</div>

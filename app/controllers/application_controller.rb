@@ -12,8 +12,9 @@ class ApplicationController < ActionController::Base
   def authenticate_user!
     unless user_signed_in?
       # If we're on the app subdomain and not authenticated, redirect to marketing domain sign in
-      if request.subdomain == 'app'
-        redirect_to helpers.marketing_sign_in_url
+      # Skip this for localhost development to avoid redirect issues
+      if request.subdomain == 'app' && !helpers.is_localhost?
+        redirect_to helpers.marketing_sign_in_url, allow_other_host: true
         return
       end
     end
