@@ -77,7 +77,8 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
-# Use DATABASE_URL environment variable for production database configuration
 production:
   <<: *default
+  # Use DATABASE_URL environment variable injected by Kamal
+  # Format: postgres://username:password@host:port/database
   url: <%= ENV['DATABASE_URL'] %>

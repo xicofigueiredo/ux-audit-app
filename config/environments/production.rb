@@ -83,6 +83,8 @@ Rails.application.configure do
     authentication: ENV.fetch('SMTP_AUTHENTICATION', 'plain'),
     enable_starttls_auto: true
   }
+  # Email links should point to the app subdomain
+  config.action_mailer.default_url_options = { host: 'app.uxauditapp.com', protocol: 'https' }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
