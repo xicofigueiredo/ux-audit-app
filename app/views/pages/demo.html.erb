@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Demo - UX Audit App</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <%= stylesheet_link_tag "application" %>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100">
 <%# Static demo page - all data hardcoded from VideoAudit #5 %>
 
 <%
@@ -145,31 +158,6 @@
 
   <!-- Main Content -->
   <div class="flex-1 flex flex-col overflow-hidden">
-    <!-- Top Bar -->
-    <header class="flex justify-between items-center px-6 py-4 bg-white border-b shadow-sm">
-      <div class="flex items-center space-x-4">
-        <%= link_to root_path, class: "text-gray-600 hover:text-purple-600 flex items-center" do %>
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-          Back to Home
-        <% end %>
-      </div>
-      <div class="flex items-center space-x-4">
-        <span class="demo-badge">Demo</span>
-        <button class="filter-btn" id="filter-btn">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-          </svg>
-          Filters
-        </button>
-        <button class="export-btn" id="export-btn">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-          </svg>
-          Export
-        </button>
-      </div>
-    </header>
-
     <!-- Main Content Area -->
     <main class="flex-1 overflow-y-auto">
 
@@ -1490,3 +1478,5 @@ document.addEventListener('keydown', function(event) {
     </main>
   </div>
 </div>
+  </body>
+</html>

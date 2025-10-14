@@ -26,6 +26,9 @@ Rails.application.routes.draw do
       end
     end
 
+    # Settings
+    get 'settings', to: 'settings#index', as: :settings
+
     # Root of app subdomain goes to projects
     root "projects#index", as: :app_root
   end
@@ -76,5 +79,8 @@ Rails.application.routes.draw do
     # App routes (accessible without subdomain on localhost)
     resources :video_audits, only: [:create, :show, :index, :destroy], as: :fallback_video_audits
     resources :projects, only: [:index], as: :fallback_projects
+
+    # Settings (accessible without subdomain on localhost)
+    get 'settings', to: 'settings#index', as: :fallback_settings unless defined?(settings_path)
   end
 end

@@ -139,7 +139,6 @@
   <!-- Header -->
   <header class="analysis-header">
     <div class="header-left">
-      <a href="/" class="back-link">&larr; Back</a>
       <div class="header-title-container">
         <h1 class="report-title">
           Workflow Report: <%= @audit.parsed_llm_response.dig('workflowSummary', 'workflowtitle') || @audit.parsed_llm_response.dig('workflowSummary', 'userGoal') || 'Analysis' %>

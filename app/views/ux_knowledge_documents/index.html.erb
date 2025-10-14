@@ -1,72 +1,235 @@
 <% content_for :title, "UX Knowledge Base" %>
 
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">UX Knowledge Base</h1>
-        <div>
-          <%= link_to "Search Knowledge", search_ux_knowledge_documents_path, class: "btn btn-outline-primary me-2" %>
-          <%= link_to "Reindex", reindex_ux_knowledge_documents_path, class: "btn btn-secondary" %>
+<% if user_signed_in? %>
+  <!-- Logged-in User View (App Context) -->
+  <div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">UX Knowledge Base</h1>
+            <p class="mt-2 text-gray-600">Explore curated UX principles, heuristics, and best practices</p>
+          </div>
+          <div class="flex gap-3">
+            <%= link_to search_ux_knowledge_documents_path, class: "inline-flex items-center px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 font-medium transition" do %>
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              Search Knowledge
+            <% end %>
+            <%= link_to reindex_ux_knowledge_documents_path, class: "inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium transition" do %>
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Reindex
+            <% end %>
+          </div>
         </div>
       </div>
 
       <!-- Statistics Cards -->
-      <div class="row mb-4">
-        <div class="col-md-4">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5 class="card-title text-primary"><%= @total_documents %></h5>
-              <p class="card-text">Total Document Chunks</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 mb-1">Total Chunks</p>
+              <p class="text-3xl font-bold text-purple-600"><%= @total_documents %></p>
+            </div>
+            <div class="bg-purple-100 rounded-full p-3">
+              <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
             </div>
           </div>
         </div>
-        <div class="col-md-4">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5 class="card-title text-success"><%= @files_count %></h5>
-              <p class="card-text">Indexed Files</p>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 mb-1">Indexed Files</p>
+              <p class="text-3xl font-bold text-green-600"><%= @files_count %></p>
+            </div>
+            <div class="bg-green-100 rounded-full p-3">
+              <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+              </svg>
             </div>
           </div>
         </div>
-        <div class="col-md-4">
-          <div class="card text-center">
-            <div class="card-body">
-              <h5 class="card-title text-info"><%= @files_stats.first&.last || 0 %></h5>
-              <p class="card-text">Largest File Chunks</p>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 mb-1">Largest File</p>
+              <p class="text-3xl font-bold text-blue-600"><%= @files_stats.first&.last || 0 %></p>
+              <p class="text-xs text-gray-500 mt-1">chunks</p>
+            </div>
+            <div class="bg-blue-100 rounded-full p-3">
+              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+              </svg>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Files Statistics -->
+      <!-- Files List -->
       <% if @files_stats.any? %>
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="mb-0">Indexed Files</h5>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Indexed Knowledge Sources</h2>
+            <p class="text-sm text-gray-600 mt-1">UX principles and guidelines from industry experts</p>
           </div>
-          <div class="card-body">
-            <div class="row">
+          <div class="divide-y divide-gray-200">
+            <% @files_stats.each do |file_name, count| %>
+              <div class="px-6 py-4 hover:bg-gray-50 transition">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <div class="bg-purple-100 rounded-lg p-2">
+                      <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="font-medium text-gray-900"><%= file_name.gsub('.pdf', '').gsub('_', ' ').titleize %></h3>
+                      <p class="text-sm text-gray-500"><%= count %> indexed chunks</p>
+                    </div>
+                  </div>
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
+                    <%= count %> chunks
+                  </span>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div class="bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">No Documents Indexed</h3>
+          <p class="text-gray-600 mb-4">Run the indexing rake task to populate the knowledge base.</p>
+          <code class="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-sm font-mono">rails ux_knowledge:index</code>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+<% else %>
+  <!-- Non-logged-in User View (Marketing Context) -->
+  <div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Hero Section -->
+      <div class="text-center mb-12">
+        <div class="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+          Free Knowledge Base
+        </div>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+          UX Knowledge Base
+        </h1>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+          Explore curated UX principles, heuristics, and best practices from industry experts. Our AI-powered audits use this knowledge to provide insights.
+        </p>
+        <div class="flex justify-center gap-4">
+          <%= link_to search_ux_knowledge_documents_path, class: "inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold shadow-lg transition" do %>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            Search Knowledge
+          <% end %>
+          <% if respond_to?(:new_user_registration_path) %>
+            <%= link_to new_user_registration_path, class: "inline-flex items-center px-6 py-3 border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 font-semibold transition" do %>
+              Get Started Free
+              <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="bg-white rounded-2xl shadow-md p-8 text-center border border-gray-100 hover:shadow-lg transition">
+          <div class="bg-purple-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <p class="text-4xl font-bold text-gray-900 mb-2"><%= @total_documents %>+</p>
+          <p class="text-gray-600 font-medium">Knowledge Chunks</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-md p-8 text-center border border-gray-100 hover:shadow-lg transition">
+          <div class="bg-green-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+          </div>
+          <p class="text-4xl font-bold text-gray-900 mb-2"><%= @files_count %></p>
+          <p class="text-gray-600 font-medium">Expert Sources</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-md p-8 text-center border border-gray-100 hover:shadow-lg transition">
+          <div class="bg-blue-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+            </svg>
+          </div>
+          <p class="text-4xl font-bold text-gray-900 mb-2">AI-Powered</p>
+          <p class="text-gray-600 font-medium">Smart Analysis</p>
+        </div>
+      </div>
+
+      <!-- Knowledge Sources -->
+      <% if @files_stats.any? %>
+        <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-6 text-white">
+            <h2 class="text-2xl font-bold mb-2">Curated Knowledge Sources</h2>
+            <p class="text-purple-100">Industry-leading UX principles and guidelines</p>
+          </div>
+          <div class="p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <% @files_stats.each do |file_name, count| %>
-                <div class="col-md-6 mb-2">
-                  <div class="d-flex justify-content-between">
-                    <span class="text-truncate me-2" title="<%= file_name %>">
-                      <%= file_name.gsub('.pdf', '') %>
-                    </span>
-                    <span class="badge bg-primary"><%= count %> chunks</span>
+                <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                  <div class="bg-purple-100 rounded-lg p-3 flex-shrink-0">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-semibold text-gray-900 truncate"><%= file_name.gsub('.pdf', '').gsub('_', ' ').titleize %></h3>
+                    <p class="text-sm text-gray-500"><%= count %> knowledge chunks</p>
                   </div>
                 </div>
               <% end %>
             </div>
           </div>
         </div>
-      <% else %>
-        <div class="text-center py-4">
-          <h5>No Documents Indexed</h5>
-          <p class="text-muted">Run the indexing rake task to populate the knowledge base.</p>
-          <code>rails ux_knowledge:index</code>
+
+        <!-- CTA Section -->
+        <div class="mt-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-xl p-8 md:p-12 text-center text-white">
+          <h2 class="text-3xl font-bold mb-4">Ready to Audit Your UX?</h2>
+          <p class="text-lg text-purple-100 mb-6 max-w-2xl mx-auto">
+            Get AI-powered insights backed by these expert UX principles. Upload your design and receive actionable feedback in minutes.
+          </p>
+          <% if respond_to?(:new_user_registration_path) %>
+            <%= link_to new_user_registration_path, class: "inline-flex items-center px-8 py-4 bg-white text-purple-600 rounded-lg hover:bg-gray-100 font-bold text-lg shadow-lg transition" do %>
+              Start Your Free Audit
+              <svg class="w-6 h-6 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            <% end %>
+          <% end %>
         </div>
       <% end %>
     </div>
   </div>
-</div>
+<% end %>
