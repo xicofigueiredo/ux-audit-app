@@ -285,7 +285,11 @@
           <% if @audit.parsed_llm_response.is_a?(Hash) && @audit.parsed_llm_response["identifiedIssues"].is_a?(Array) %>
             <div class="issue-card-grid">
               <% @audit.parsed_llm_response["identifiedIssues"].each_with_index do |issue, idx| %>
-                <div class="issue-card" id="issue-card-<%= idx %>">
+                <div class="issue-card" id="issue-card-<%= idx %>"
+                     data-element-type="<%= issue.dig('elementRef', 'type') %>"
+                     data-element-label="<%= issue.dig('elementRef', 'elementLabel') %>"
+                     data-element-bbox="<%= issue.dig('elementRef', 'boundingBox')&.to_json %>"
+                     data-grounding-notes="<%= issue['groundingNotes'] %>">
                   <!-- Issue ID and Title with Severity -->
                   <div class="issue-card-header">
                     <div class="issue-id-title">
@@ -507,7 +511,23 @@
   <div id="screenshotModal" class="screenshot-modal" style="display: none;">
     <div class="screenshot-modal-content">
       <button class="screenshot-modal-close" aria-label="Close modal">&times;</button>
-      <img id="screenshotModalImage" src="" alt="Issue screenshot enlarged" style="max-width: 90%; max-height: 90vh; border-radius: 8px;">
+
+      <!-- Modal Carousel Container -->
+      <div class="modal-carousel-wrapper">
+        <img id="screenshotModalImage" src="" alt="Issue screenshot enlarged" style="max-width: 90vw; max-height: 90vh; border-radius: 8px;">
+
+        <!-- Carousel Navigation in Modal -->
+        <button class="modal-carousel-prev" aria-label="Previous frame" style="display: none;">‹</button>
+        <button class="modal-carousel-next" aria-label="Next frame" style="display: none;">›</button>
+
+        <!-- Frame Counter in Modal -->
+        <div class="modal-carousel-counter" style="display: none;">
+          <span class="modal-current-frame">1</span> / <span class="modal-total-frames">1</span>
+        </div>
+
+        <!-- Primary Frame Badge in Modal -->
+        <div class="modal-primary-badge" style="display: none;">AI Reference</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1601,6 +1621,13 @@
   animation: zoomIn 0.3s ease;
 }
 
+.modal-carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @keyframes zoomIn {
   from {
     transform: scale(0.9);
@@ -1636,6 +1663,101 @@
   background: white;
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Modal Carousel Navigation */
+.modal-carousel-prev,
+.modal-carousel-next {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  color: #374151;
+  border: none;
+  font-size: 48px;
+  padding: 12px 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  line-height: 1;
+  z-index: 10001;
+  font-weight: 300;
+}
+
+.modal-carousel-prev:hover,
+.modal-carousel-next:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.modal-carousel-prev {
+  left: 40px;
+}
+
+.modal-carousel-next {
+  right: 40px;
+}
+
+/* Modal Carousel Counter */
+.modal-carousel-counter {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: monospace;
+  z-index: 10001;
+}
+
+/* Modal Primary Badge */
+.modal-primary-badge {
+  position: fixed;
+  top: 80px;
+  left: 40px;
+  background: rgba(99, 102, 241, 0.95);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10001;
+}
+
+@media (max-width: 768px) {
+  .modal-carousel-prev,
+  .modal-carousel-next {
+    font-size: 36px;
+    padding: 8px 14px;
+  }
+
+  .modal-carousel-prev {
+    left: 20px;
+  }
+
+  .modal-carousel-next {
+    right: 20px;
+  }
+
+  .modal-carousel-counter {
+    bottom: 20px;
+    font-size: 0.9rem;
+    padding: 8px 16px;
+  }
+
+  .modal-primary-badge {
+    top: 70px;
+    left: 20px;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
 }
 
 .screenshot-thumbnail:hover {
@@ -1893,7 +2015,34 @@ function copyIssue(auditId, idx) {
   let text = '';
   text += card.querySelector('.issue-title')?.innerText + '\n';
   text += card.querySelector('.issue-description')?.innerText + '\n';
-  text += 'Recommendations:\n';
+
+  // Add element grounding information if available
+  const elementType = card.getAttribute('data-element-type');
+  const elementLabel = card.getAttribute('data-element-label');
+  const elementBbox = card.getAttribute('data-element-bbox');
+  const groundingNotes = card.getAttribute('data-grounding-notes');
+
+  if (elementLabel && elementLabel !== 'Element not specified (legacy data)') {
+    text += '\nElement: ' + elementLabel;
+
+    if (elementType === 'vision' && elementBbox) {
+      try {
+        const bbox = JSON.parse(elementBbox);
+        if (bbox.x !== undefined) {
+          text += ` (Location: x=${bbox.x}, y=${bbox.y}, size=${bbox.width}×${bbox.height}px)`;
+        }
+      } catch (e) {
+        // Bbox parsing failed, skip
+      }
+    }
+
+    if (groundingNotes && groundingNotes !== 'null' && groundingNotes !== '') {
+      text += '\nGrounding: ' + groundingNotes;
+    }
+    text += '\n';
+  }
+
+  text += '\nRecommendations:\n';
   card.querySelectorAll('.issue-recommendations li').forEach(li => {
     text += '- ' + li.innerText + '\n';
   });
@@ -2162,25 +2311,107 @@ function goToCarouselSlide(issueIndex, slideIndex) {
   }
 }
 
+// Store current modal carousel state
+let currentModalIssueIndex = null;
+let currentModalScreenshots = [];
+let currentModalSlideIndex = 0;
+
 function openCarouselModal(issueIndex) {
   const carousel = document.querySelector(`.issue-carousel[data-issue-index="${issueIndex}"]`);
   if (!carousel) return;
 
+  // Get all slides for this issue
+  const slides = carousel.querySelectorAll('.carousel-slide');
   const activeSlide = carousel.querySelector('.carousel-slide.active');
-  if (!activeSlide) return;
+  const currentSlideIndex = Array.from(slides).indexOf(activeSlide);
 
-  const img = activeSlide.querySelector('.carousel-image');
-  if (!img) return;
+  // Store carousel data for modal navigation
+  currentModalIssueIndex = issueIndex;
+  currentModalSlideIndex = currentSlideIndex;
+  currentModalScreenshots = Array.from(slides).map(slide => {
+    const img = slide.querySelector('.carousel-image');
+    return {
+      src: img.src,
+      isPrimary: img.classList.contains('primary-frame'),
+      frameNumber: img.getAttribute('data-frame-number')
+    };
+  });
 
-  // Use existing screenshot modal
+  // Update modal image
   const modal = document.getElementById('screenshotModal');
   const modalImage = document.getElementById('screenshotModalImage');
 
   if (modalImage && modal) {
-    modalImage.src = img.src;
+    updateModalCarousel(currentSlideIndex);
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+
+    // Show/hide navigation buttons based on screenshot count
+    const prevBtn = document.querySelector('.modal-carousel-prev');
+    const nextBtn = document.querySelector('.modal-carousel-next');
+    const counter = document.querySelector('.modal-carousel-counter');
+
+    if (currentModalScreenshots.length > 1) {
+      prevBtn.style.display = 'block';
+      nextBtn.style.display = 'block';
+      counter.style.display = 'block';
+    } else {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+      counter.style.display = 'none';
+    }
   }
+}
+
+function updateModalCarousel(slideIndex) {
+  if (!currentModalScreenshots[slideIndex]) return;
+
+  const screenshot = currentModalScreenshots[slideIndex];
+  const modalImage = document.getElementById('screenshotModalImage');
+  const currentFrameSpan = document.querySelector('.modal-current-frame');
+  const totalFramesSpan = document.querySelector('.modal-total-frames');
+  const primaryBadge = document.querySelector('.modal-primary-badge');
+
+  // Update image
+  if (modalImage) {
+    modalImage.src = screenshot.src;
+  }
+
+  // Update counter
+  if (currentFrameSpan) {
+    currentFrameSpan.textContent = slideIndex + 1;
+  }
+  if (totalFramesSpan) {
+    totalFramesSpan.textContent = currentModalScreenshots.length;
+  }
+
+  // Show/hide primary badge
+  if (primaryBadge) {
+    primaryBadge.style.display = screenshot.isPrimary ? 'block' : 'none';
+  }
+
+  currentModalSlideIndex = slideIndex;
+}
+
+function navigateModalCarousel(direction) {
+  let newIndex = currentModalSlideIndex + direction;
+
+  // Wrap around
+  if (newIndex < 0) newIndex = currentModalScreenshots.length - 1;
+  if (newIndex >= currentModalScreenshots.length) newIndex = 0;
+
+  updateModalCarousel(newIndex);
+}
+
+function closeScreenshotModal() {
+  const modal = document.getElementById('screenshotModal');
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+
+  // Reset modal state
+  currentModalIssueIndex = null;
+  currentModalScreenshots = [];
+  currentModalSlideIndex = 0;
 }
 
 // ========================================
@@ -2323,22 +2554,31 @@ if (exportBtn) {
   });
 }
 
-// Screenshot Modal Functions
+// Screenshot Modal Functions (for single image thumbnails)
 function openScreenshotModal(screenshotImg) {
   const modal = document.getElementById('screenshotModal');
   const modalImage = document.getElementById('screenshotModalImage');
 
   if (screenshotImg) {
+    // Reset modal state for single images
+    currentModalIssueIndex = null;
+    currentModalScreenshots = [{
+      src: screenshotImg.src,
+      isPrimary: false,
+      frameNumber: null
+    }];
+    currentModalSlideIndex = 0;
+
     modalImage.src = screenshotImg.src;
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-  }
-}
 
-function closeScreenshotModal() {
-  const modal = document.getElementById('screenshotModal');
-  modal.style.display = 'none';
-  document.body.style.overflow = '';
+    // Hide navigation for single images
+    document.querySelector('.modal-carousel-prev').style.display = 'none';
+    document.querySelector('.modal-carousel-next').style.display = 'none';
+    document.querySelector('.modal-carousel-counter').style.display = 'none';
+    document.querySelector('.modal-primary-badge').style.display = 'none';
+  }
 }
 
 // Screenshot modal event listeners
@@ -2361,12 +2601,37 @@ if (screenshotModalClose) {
   });
 }
 
-// Close screenshot modal on ESC key
+// Modal carousel navigation button listeners
+const modalPrevBtn = document.querySelector('.modal-carousel-prev');
+const modalNextBtn = document.querySelector('.modal-carousel-next');
+
+if (modalPrevBtn) {
+  modalPrevBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    navigateModalCarousel(-1);
+  });
+}
+
+if (modalNextBtn) {
+  modalNextBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    navigateModalCarousel(1);
+  });
+}
+
+// Keyboard navigation for modal carousel
 document.addEventListener('keydown', function(event) {
-  if (event.key === 'Escape') {
-    const modal = document.getElementById('screenshotModal');
-    if (modal && modal.style.display === 'flex') {
+  const modal = document.getElementById('screenshotModal');
+
+  if (modal && modal.style.display === 'flex') {
+    if (event.key === 'Escape') {
       closeScreenshotModal();
+    } else if (event.key === 'ArrowLeft' && currentModalScreenshots.length > 1) {
+      event.preventDefault();
+      navigateModalCarousel(-1);
+    } else if (event.key === 'ArrowRight' && currentModalScreenshots.length > 1) {
+      event.preventDefault();
+      navigateModalCarousel(1);
     }
   }
 });

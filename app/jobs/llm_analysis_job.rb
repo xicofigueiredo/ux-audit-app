@@ -26,16 +26,27 @@ The image frames are provided in chronological order and represent a REAL user's
 4. NEVER provide generic heuristic evaluations without connecting them to specific frames
 5. NEVER describe a hypothetical interface - only analyze what is ACTUALLY in the frames
 
+### GROUNDING RULES (MANDATORY) ###
+Element-level grounding is REQUIRED for every issue you identify:
+- Identify the EXACT UI element causing the issue (button, form field, chart, menu, icon, etc.)
+- Provide the element's approximate location using bounding box coordinates (x, y, width, height in pixels)
+- Use grounded language: e.g., "the blue 'Submit' button at the bottom right" NOT "the submit button"
+- If you cannot confidently identify a specific element, set elementRef.type to "unknown" and explain why in groundingNotes
+- NEVER fabricate element locations or labels - only describe what you actually see in the frames
+- Every issue MUST include an elementRef object with at minimum a type ("vision" or "unknown") and elementLabel
+
 ### WARNING: UNACCEPTABLE RESPONSES ###
 DO NOT provide responses like:
 - "Lack of visibility of system status" without specifying which frame shows this
 - "Inconsistent use of terminology" without showing where this appears in the frames
 - Generic lists of heuristic violations that could apply to any interface
+- Issues without specific element identification
 
 EVERY issue must have:
 - A SPECIFIC frameReference (required field)
 - A SPECIFIC painPointTitle describing what is wrong in those frames (required field)
 - An issueDescription that references ACTUAL UI elements you see in the frames
+- An elementRef object identifying the specific UI element causing the issue
 
 ### YOUR STEP-BY-STEP ANALYTICAL PROCESS ###
 To ensure a world-class audit, you MUST follow this thinking process:
@@ -69,7 +80,14 @@ To ensure a world-class audit, you MUST follow this thinking process:
       "issueDescription": "A detailed explanation referencing the SPECIFIC UI elements you see in the frames. Start with the heuristic being violated, then describe what you observe.",
       "recommendations": [
         "An array of strings, where each string is a concrete, actionable recommendation based on the observed issue."
-      ]
+      ],
+      "elementRef": {
+        "type": "REQUIRED: Either 'vision' (you can identify the element) or 'unknown' (you cannot locate it)",
+        "elementLabel": "REQUIRED: Human-friendly description of the element (e.g., 'Submit button', 'Progress chart', 'Email input field')",
+        "boundingBox": "OPTIONAL: An object with x, y, width, height (in pixels) if type is 'vision'. Approximate location of the element in the frame. Example: {\"x\": 450, \"y\": 200, \"width\": 120, \"height\": 40}",
+        "confidence": "OPTIONAL: A number between 0 and 1 indicating your confidence in the element identification"
+      },
+      "groundingNotes": "OPTIONAL: Brief explanation of how you identified this element, or why grounding is 'unknown'. Keep to 1-2 sentences."
     }
   ]
 }
@@ -88,13 +106,20 @@ To ensure a world-class audit, you MUST follow this thinking process:
       "painPointTitle": "Password field lacks visibility of requirements",
       "severity": "Medium",
       "issueDescription": "Violates Nielsen's Heuristic #5: Error Prevention. In Frame 3, the password input field is visible but provides no indication of password requirements (length, special characters, etc.). Users can only discover requirements after submission failure.",
-      "recommendations": ["Add real-time password requirements display next to the input field", "Show checkmarks as requirements are met"]
+      "recommendations": ["Add real-time password requirements display next to the input field", "Show checkmarks as requirements are met"],
+      "elementRef": {
+        "type": "vision",
+        "elementLabel": "Password input field",
+        "boundingBox": {"x": 320, "y": 280, "width": 240, "height": 36},
+        "confidence": 0.92
+      },
+      "groundingNotes": "Identified by the 'Password' label above the text input field in the center-left of the registration form."
     }
   ]
 }
 
   Your response must be a single valid JSON object and nothing else. Do not include any text, notes, or explanations outside the JSON structure. Your response must begin with '{' and end with '}'.
-  **Every issue MUST have both frameReference and painPointTitle fields. Responses missing these fields will be rejected.**
+  **Every issue MUST have frameReference, painPointTitle, AND elementRef fields. The elementRef must include at minimum type and elementLabel. Responses missing these fields will be rejected.**
   PROMPT
 
   BATCH_SIZE = 20
@@ -177,6 +202,21 @@ To ensure a world-class audit, you MUST follow this thinking process:
     # Map recommendations
     normalized["recommendations"] = issue["recommendations"] || issue["recommendation"] || []
     normalized["recommendations"] = [normalized["recommendations"]] if normalized["recommendations"].is_a?(String)
+
+    # Map elementRef (backward compatibility: create default if missing)
+    if issue["elementRef"].is_a?(Hash)
+      normalized["elementRef"] = issue["elementRef"]
+    else
+      # Create a minimal elementRef for backward compatibility
+      normalized["elementRef"] = {
+        "type" => "unknown",
+        "elementLabel" => "Element not specified (legacy data)"
+      }
+      Rails.logger.warn("Issue '#{normalized['painPointTitle']}' missing elementRef - added default")
+    end
+
+    # Map groundingNotes (optional)
+    normalized["groundingNotes"] = issue["groundingNotes"] if issue["groundingNotes"]
 
     normalized
   end
@@ -377,11 +417,65 @@ To ensure a world-class audit, you MUST follow this thinking process:
       elsif is_generic_response?(description, title.to_s)
         errors << "Issue ##{idx} appears to be a generic heuristic evaluation without frame-specific details"
       end
+
+      # Check for element grounding (elementRef)
+      element_ref = issue['elementRef']
+      if element_ref.nil? || !element_ref.is_a?(Hash)
+        errors << "Issue ##{idx} missing elementRef object"
+      else
+        # Check required fields in elementRef
+        ref_type = element_ref['type']
+        if ref_type.nil? || ref_type.to_s.strip.empty?
+          errors << "Issue ##{idx} elementRef missing 'type' field"
+        elsif !['vision', 'unknown'].include?(ref_type.to_s.downcase)
+          errors << "Issue ##{idx} elementRef has invalid type: '#{ref_type}' (must be 'vision' or 'unknown')"
+        end
+
+        element_label = element_ref['elementLabel']
+        if element_label.nil? || element_label.to_s.strip.empty?
+          errors << "Issue ##{idx} elementRef missing 'elementLabel'"
+        elsif element_label.to_s.length < 3
+          errors << "Issue ##{idx} elementRef has generic/short elementLabel: '#{element_label}'"
+        end
+
+        # If type is vision, should have bounding box
+        if ref_type.to_s.downcase == 'vision'
+          bbox = element_ref['boundingBox']
+          if bbox.nil? || !bbox.is_a?(Hash)
+            Rails.logger.warn("Issue ##{idx} has type='vision' but missing boundingBox (acceptable but not ideal)")
+          elsif !['x', 'y', 'width', 'height'].all? { |k| bbox.key?(k) }
+            Rails.logger.warn("Issue ##{idx} has incomplete boundingBox (missing x/y/width/height)")
+          end
+        end
+
+        # If type is unknown, should have grounding notes explaining why
+        if ref_type.to_s.downcase == 'unknown'
+          notes = issue['groundingNotes']
+          if notes.nil? || notes.to_s.strip.empty?
+            Rails.logger.warn("Issue ##{idx} has type='unknown' but no groundingNotes explaining why")
+          end
+        end
+      end
     end
 
     # Check if ALL issues seem generic (likely a failed analysis)
     if issues.length > 5 && issues.all? { |i| is_generic_issue?(i) }
       errors << "All issues appear to be generic heuristic evaluations rather than frame-specific analysis"
+    end
+
+    # Log grounding quality metrics
+    if errors.empty?
+      grounded_issues = issues.count { |i| i.dig('elementRef', 'type')&.downcase == 'vision' }
+      unknown_issues = issues.count { |i| i.dig('elementRef', 'type')&.downcase == 'unknown' }
+      with_bbox = issues.count { |i| i.dig('elementRef', 'boundingBox').is_a?(Hash) }
+      grounding_rate = (grounded_issues.to_f / issues.length * 100).round(1)
+
+      Rails.logger.info("Grounding Quality: #{grounded_issues}/#{issues.length} vision (#{grounding_rate}%), #{unknown_issues} unknown, #{with_bbox} with bounding boxes")
+
+      # Warn if grounding rate is below target
+      if grounding_rate < 70.0
+        Rails.logger.warn("Grounding rate #{grounding_rate}% is below target of 70%")
+      end
     end
 
     errors
