@@ -290,17 +290,18 @@
                   <div class="issue-card-header">
                     <div class="issue-id-title">
                       <span class="issue-id">[<%= generate_issue_id(@audit.id, idx) %>]</span>
-                      <h3 class="issue-title"><%= issue["painPointTitle"] %></h3>
+                      <h3 class="issue-title"><%= get_issue_title(issue) %></h3>
                     </div>
-                    <span class="issue-severity <%= issue["severity"].downcase %>">
-                      <%= issue["severity"].capitalize %>
+                    <span class="issue-severity <%= issue["severity"].to_s.downcase %>">
+                      <%= issue["severity"].to_s.capitalize %>
                     </span>
                   </div>
 
                   <!-- Heuristic Reference -->
-                  <% if issue["heuristicViolated"].present? %>
+                  <% heuristic = get_heuristic_violated(issue) %>
+                  <% if heuristic.present? %>
                     <div class="issue-heuristic">
-                      Heuristic: <%= extract_heuristic_label(issue["heuristicViolated"]) %>
+                      Heuristic: <%= extract_heuristic_label(heuristic) %>
                     </div>
                   <% end %>
 
@@ -316,20 +317,55 @@
                     </div>
                   <% end %>
 
-                  <!-- Screenshot Section -->
-                  <% screenshot = @audit.issue_screenshots.find_by(issue_index: idx) %>
-                  <% if screenshot && screenshot.image_data.present? %>
+                  <!-- Screenshot Carousel Section -->
+                  <% screenshots = @audit.issue_screenshots.where(issue_index: idx).order(:frame_sequence) %>
+                  <% if screenshots.any? %>
                     <div class="issue-screenshot-container" style="margin-bottom: 14px;">
-                      <strong style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: #111827;">Screenshot:</strong>
-                      <div class="screenshot-thumbnail" data-issue-index="<%= idx %>" style="cursor: pointer; position: relative; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; transition: all 0.2s;">
-                        <img src="data:image/jpeg;base64,<%= screenshot.image_data %>"
-                             alt="Issue screenshot"
-                             class="issue-screenshot-img"
-                             style="width: 100%; height: 100%; object-fit: cover;"
-                             loading="lazy">
-                        <div style="position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px 0 0 0;">
-                          🔍 Click to expand
+                      <strong style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: #111827;">
+                        <%= screenshots.count > 1 ? "Screenshots:" : "Screenshot:" %>
+                      </strong>
+
+                      <div class="issue-carousel" data-issue-index="<%= idx %>">
+                        <div class="carousel-container">
+                          <% screenshots.each_with_index do |screenshot, seq| %>
+                            <div class="carousel-slide <%= 'active' if seq == 0 %>" data-slide="<%= seq %>">
+                              <img src="data:image/jpeg;base64,<%= screenshot.image_data %>"
+                                   alt="Issue frame <%= seq + 1 %> of <%= screenshots.count %>"
+                                   class="carousel-image <%= 'primary-frame' if screenshot.is_primary %>"
+                                   loading="lazy"
+                                   data-frame-number="<%= screenshot.frame_number %>">
+                              <% if screenshot.is_primary %>
+                                <div class="primary-frame-badge">AI Reference</div>
+                              <% end %>
+                            </div>
+                          <% end %>
                         </div>
+
+                        <% if screenshots.count > 1 %>
+                          <!-- Carousel Navigation -->
+                          <button class="carousel-prev" data-issue="<%= idx %>" aria-label="Previous frame">‹</button>
+                          <button class="carousel-next" data-issue="<%= idx %>" aria-label="Next frame">›</button>
+
+                          <!-- Frame Counter -->
+                          <div class="carousel-counter">
+                            <span class="current-frame">1</span> / <%= screenshots.count %>
+                          </div>
+
+                          <!-- Thumbnail Dots -->
+                          <div class="carousel-dots">
+                            <% screenshots.count.times do |i| %>
+                              <button class="carousel-dot <%= 'active' if i == 0 %><%= ' primary-dot' if screenshots[i].is_primary %>"
+                                      data-slide="<%= i %>"
+                                      data-issue="<%= idx %>"
+                                      aria-label="Go to frame <%= i + 1 %>"></button>
+                            <% end %>
+                          </div>
+                        <% else %>
+                          <!-- Single frame - click to expand -->
+                          <div class="single-frame-overlay">
+                            🔍 Click to expand
+                          </div>
+                        <% end %>
                       </div>
                     </div>
                   <% end %>
@@ -337,18 +373,20 @@
                   <!-- Evidence Section -->
                   <div class="issue-evidence">
                     <strong>Evidence:</strong>
-                    <%= extract_evidence(issue["issueDescription"]) %>
+                    <%= extract_evidence(get_issue_description(issue)) %>
                   </div>
 
                   <!-- Recommendations -->
-                  <div class="issue-recommendations">
-                    <strong>Recommendations:</strong>
-                    <ul>
-                      <% issue["recommendations"].each do |rec| %>
-                        <li><%= rec %></li>
-                      <% end %>
-                    </ul>
-                  </div>
+                  <% if issue["recommendations"].is_a?(Array) && issue["recommendations"].any? %>
+                    <div class="issue-recommendations">
+                      <strong>Recommendations:</strong>
+                      <ul>
+                        <% issue["recommendations"].each do |rec| %>
+                          <li><%= rec %></li>
+                        <% end %>
+                      </ul>
+                    </div>
+                  <% end %>
 
                   <!-- Card Actions -->
                   <div class="issue-card-actions">
@@ -373,14 +411,14 @@
             <div class="next-steps-section">
               <h3 class="next-steps-heading">Next Steps</h3>
               <ul class="next-steps-list">
-                <% @audit.parsed_llm_response["identifiedIssues"].group_by { |i| i["severity"] }.each do |severity, issues| %>
-                  <% if severity == "High" %>
+                <% @audit.parsed_llm_response["identifiedIssues"].group_by { |i| i["severity"].to_s }.each do |severity, issues| %>
+                  <% if severity.downcase == "high" || severity == "4" %>
                     <% issues.each do |issue| %>
-                      <li>Fix <%= issue["painPointTitle"].downcase %></li>
+                      <li>Fix <%= get_issue_title(issue).downcase %></li>
                     <% end %>
                   <% end %>
                 <% end %>
-                <% medium_issues = @audit.parsed_llm_response["identifiedIssues"].select { |i| i["severity"] == "Medium" } %>
+                <% medium_issues = @audit.parsed_llm_response["identifiedIssues"].select { |i| i["severity"].to_s.downcase == "medium" || i["severity"].to_s == "2" } %>
                 <% if medium_issues.any? %>
                   <li>Review and address medium severity issues</li>
                 <% end %>
@@ -1610,6 +1648,173 @@
   transition: transform 0.2s;
 }
 
+/* Carousel Styles */
+.issue-carousel {
+  position: relative;
+  width: 100%;
+}
+
+.carousel-container {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.carousel-slide {
+  display: none;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.carousel-slide.active {
+  display: block;
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.carousel-image.primary-frame {
+  border: 2px solid #6366f1;
+}
+
+/* Primary Frame Badge */
+.primary-frame-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(99, 102, 241, 0.95);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Navigation Buttons */
+.carousel-prev,
+.carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  font-size: 28px;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  line-height: 1;
+  z-index: 10;
+  font-weight: 300;
+}
+
+.carousel-prev:hover,
+.carousel-next:hover {
+  background: rgba(0, 0, 0, 0.85);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-prev {
+  left: 8px;
+}
+
+.carousel-next {
+  right: 8px;
+}
+
+/* Frame Counter */
+.carousel-counter {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: monospace;
+  z-index: 10;
+}
+
+/* Thumbnail Dots */
+.carousel-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.carousel-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
+.carousel-dot.active {
+  background: white;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.carousel-dot.primary-dot {
+  background: rgba(99, 102, 241, 0.8);
+}
+
+.carousel-dot.primary-dot.active {
+  background: #6366f1;
+}
+
+/* Single Frame Overlay */
+.single-frame-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px 0 0 0;
+  z-index: 10;
+}
+
+/* Hover Effect for Carousel */
+.issue-carousel:hover .carousel-container {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Keyboard Navigation Indicator */
+.carousel-container:focus-within {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
 /* Show All Button */
 .show-all-btn {
   background: #6366f1;
@@ -1893,8 +2098,147 @@ document.addEventListener('keydown', function(event) {
 });
 
 // ========================================
+// CAROUSEL FUNCTIONS
+// ========================================
+
+function navigateCarousel(issueIndex, direction) {
+  const carousel = document.querySelector(`.issue-carousel[data-issue-index="${issueIndex}"]`);
+  if (!carousel) return;
+
+  const slides = carousel.querySelectorAll('.carousel-slide');
+  const currentSlide = carousel.querySelector('.carousel-slide.active');
+  const currentIndex = Array.from(slides).indexOf(currentSlide);
+
+  let newIndex = currentIndex + direction;
+
+  // Wrap around
+  if (newIndex < 0) newIndex = slides.length - 1;
+  if (newIndex >= slides.length) newIndex = 0;
+
+  // Update active slide
+  currentSlide.classList.remove('active');
+  slides[newIndex].classList.add('active');
+
+  // Update counter
+  const counter = carousel.querySelector('.current-frame');
+  if (counter) {
+    counter.textContent = newIndex + 1;
+  }
+
+  // Update dots
+  const dots = carousel.querySelectorAll('.carousel-dot');
+  dots.forEach((dot, i) => {
+    if (i === newIndex) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  });
+}
+
+function goToCarouselSlide(issueIndex, slideIndex) {
+  const carousel = document.querySelector(`.issue-carousel[data-issue-index="${issueIndex}"]`);
+  if (!carousel) return;
+
+  const slides = carousel.querySelectorAll('.carousel-slide');
+  const dots = carousel.querySelectorAll('.carousel-dot');
+
+  // Remove all active classes
+  slides.forEach(slide => slide.classList.remove('active'));
+  dots.forEach(dot => dot.classList.remove('active'));
+
+  // Set new active slide and dot
+  if (slides[slideIndex]) {
+    slides[slideIndex].classList.add('active');
+  }
+  if (dots[slideIndex]) {
+    dots[slideIndex].classList.add('active');
+  }
+
+  // Update counter
+  const counter = carousel.querySelector('.current-frame');
+  if (counter) {
+    counter.textContent = slideIndex + 1;
+  }
+}
+
+function openCarouselModal(issueIndex) {
+  const carousel = document.querySelector(`.issue-carousel[data-issue-index="${issueIndex}"]`);
+  if (!carousel) return;
+
+  const activeSlide = carousel.querySelector('.carousel-slide.active');
+  if (!activeSlide) return;
+
+  const img = activeSlide.querySelector('.carousel-image');
+  if (!img) return;
+
+  // Use existing screenshot modal
+  const modal = document.getElementById('screenshotModal');
+  const modalImage = document.getElementById('screenshotModalImage');
+
+  if (modalImage && modal) {
+    modalImage.src = img.src;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// ========================================
 // EVENT LISTENERS (CSP Compliant)
 // ========================================
+
+// Carousel navigation buttons
+document.querySelectorAll('.carousel-prev').forEach(function(button) {
+  button.addEventListener('click', function(e) {
+    e.stopPropagation(); // Prevent opening modal
+    const issueIndex = parseInt(this.getAttribute('data-issue'), 10);
+    navigateCarousel(issueIndex, -1);
+  });
+});
+
+document.querySelectorAll('.carousel-next').forEach(function(button) {
+  button.addEventListener('click', function(e) {
+    e.stopPropagation(); // Prevent opening modal
+    const issueIndex = parseInt(this.getAttribute('data-issue'), 10);
+    navigateCarousel(issueIndex, 1);
+  });
+});
+
+// Carousel dot navigation
+document.querySelectorAll('.carousel-dot').forEach(function(dot) {
+  dot.addEventListener('click', function(e) {
+    e.stopPropagation(); // Prevent opening modal
+    const issueIndex = parseInt(this.getAttribute('data-issue'), 10);
+    const slideIndex = parseInt(this.getAttribute('data-slide'), 10);
+    goToCarouselSlide(issueIndex, slideIndex);
+  });
+});
+
+// Carousel container click to open modal
+document.querySelectorAll('.carousel-container').forEach(function(container) {
+  container.addEventListener('click', function() {
+    const carousel = this.closest('.issue-carousel');
+    const issueIndex = parseInt(carousel.getAttribute('data-issue-index'), 10);
+    openCarouselModal(issueIndex);
+  });
+});
+
+// Keyboard navigation for carousels
+document.addEventListener('keydown', function(event) {
+  const focusedCarousel = document.querySelector('.carousel-container:focus-within');
+  if (!focusedCarousel) return;
+
+  const carousel = focusedCarousel.closest('.issue-carousel');
+  const issueIndex = parseInt(carousel.getAttribute('data-issue-index'), 10);
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault();
+    navigateCarousel(issueIndex, -1);
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault();
+    navigateCarousel(issueIndex, 1);
+  }
+});
 
 // Severity info icon click handlers
 document.querySelectorAll('.severity-info-icon').forEach(function(button) {

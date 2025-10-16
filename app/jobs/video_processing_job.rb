@@ -17,14 +17,14 @@ class VideoProcessingJob < ApplicationJob
       frames_dir = Rails.root.join('tmp', 'frames', audit.id.to_s)
       FileUtils.mkdir_p(frames_dir)
 
-      # Extract frames using FFmpeg directly (1 frame per second)
+      # Extract frames using FFmpeg directly (2 frames per second)
       require 'shellwords'
 
       # Use full path to ffmpeg to ensure it's found in Sidekiq environment
       ffmpeg_path = `which ffmpeg`.strip
       ffmpeg_path = 'ffmpeg' if ffmpeg_path.empty? # Fallback to PATH
 
-      ffmpeg_command = "#{ffmpeg_path} -i #{Shellwords.escape(video_path)} -vf fps=1 #{Shellwords.escape(frames_dir)}/frame_%04d.jpg"
+      ffmpeg_command = "#{ffmpeg_path} -i #{Shellwords.escape(video_path)} -vf fps=2 #{Shellwords.escape(frames_dir)}/frame_%04d.jpg"
 
       unless system(ffmpeg_command)
         raise "FFmpeg failed to extract frames from video"

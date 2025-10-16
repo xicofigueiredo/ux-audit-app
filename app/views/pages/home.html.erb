@@ -162,9 +162,9 @@
       <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
         <div class="flex items-center mb-4">
           <svg class="w-6 h-6 text-green-500 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-          <span class="text-lg font-bold text-gray-900">No User Testing Required</span>
+          <span class="text-lg font-bold text-gray-900">Speed Up Your UX Validation</span>
         </div>
-        <p class="text-gray-500">Skip expensive user testing sessions while still getting valuable UX insights.</p>
+        <p class="text-gray-500">Identify usability problems early and prioritize what to test with real users later.</p>
       </div>
       <!-- Card 3 -->
       <div class="bg-white rounded-2xl shadow p-8 flex flex-col">
@@ -296,9 +296,9 @@
 </section>
 
 <!-- Screenshot Modal -->
-<div id="screenshotModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onclick="closeScreenshotModal()">
-  <div class="relative bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-auto" onclick="event.stopPropagation()">
-    <button onclick="closeScreenshotModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-white rounded-full p-2 shadow-lg z-10">
+<div id="screenshotModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+  <div class="relative bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-auto" id="modalContent">
+    <button id="closeModalButton" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-white rounded-full p-2 shadow-lg z-10">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
       </svg>
@@ -374,6 +374,30 @@ document.addEventListener('DOMContentLoaded', function() {
   const expandButton = document.querySelector('[data-expand-screenshot]');
   if (expandButton) {
     expandButton.addEventListener('click', openScreenshotModal);
+  }
+
+  // Add click handler to close button
+  const closeButton = document.getElementById('closeModalButton');
+  if (closeButton) {
+    closeButton.addEventListener('click', closeScreenshotModal);
+  }
+
+  // Add click handler to modal backdrop
+  const modal = document.getElementById('screenshotModal');
+  if (modal) {
+    modal.addEventListener('click', function(event) {
+      if (event.target === modal) {
+        closeScreenshotModal();
+      }
+    });
+  }
+
+  // Prevent clicks inside modal content from closing modal
+  const modalContent = document.getElementById('modalContent');
+  if (modalContent) {
+    modalContent.addEventListener('click', function(event) {
+      event.stopPropagation();
+    });
   }
 
   // Close modal on ESC key

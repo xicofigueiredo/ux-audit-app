@@ -9,8 +9,10 @@ module ApplicationHelper
     if frame_ref =~ /Frame(?:s)? (\d+)(?:-(\d+))?/i
       start_frame = $1.to_i
       end_frame = $2 ? $2.to_i : start_frame
-      start_time = Time.at(start_frame - 1).utc.strftime('%-M:%S')
-      end_time = Time.at(end_frame - 1).utc.strftime('%-M:%S')
+      # With 2 FPS, each frame represents 0.5 seconds
+      # Frame 1 = 0.0s, Frame 2 = 0.5s, Frame 3 = 1.0s, etc.
+      start_time = Time.at((start_frame - 1) / 2.0).utc.strftime('%-M:%S')
+      end_time = Time.at((end_frame - 1) / 2.0).utc.strftime('%-M:%S')
       return start_time == end_time ? start_time : "#{start_time} - #{end_time}"
     end
     nil
@@ -48,7 +50,7 @@ module ApplicationHelper
     stats = { total: issues.length, high: 0, medium: 0, low: 0 }
 
     issues.each do |issue|
-      severity = issue["severity"]&.downcase
+      severity = issue["severity"]&.to_s&.downcase
       case severity
       when "high"
         stats[:high] += 1
@@ -78,6 +80,21 @@ module ApplicationHelper
     text
   end
 
+  # Get issue title - handles both new and old format
+  def get_issue_title(issue)
+    issue["painPointTitle"] || issue["issue"] || "Untitled Issue"
+  end
+
+  # Get issue description - handles both new and old format
+  def get_issue_description(issue)
+    issue["issueDescription"] || issue["issue"] || ""
+  end
+
+  # Get heuristic violated - handles both new and old format
+  def get_heuristic_violated(issue)
+    issue["heuristicViolated"] || issue["heuristic"]
+  end
+
   # Check if we're on localhost (for development)
   def is_localhost?
     request.host == 'localhost' || request.host.start_with?('127.0.0.1')
@@ -89,8 +106,8 @@ module ApplicationHelper
     port = [80, 443].include?(request.port) ? '' : ":#{request.port}"
 
     if is_localhost?
-      # On localhost, just use localhost without subdomain trickery
-      base = "#{protocol}localhost#{port}"
+      # On localhost, use app.localhost subdomain
+      base = "#{protocol}app.localhost#{port}"
     else
       domain = request.domain
       base = "#{protocol}app.#{domain}#{port}"
@@ -163,17 +180,8 @@ module ApplicationHelper
 
   # Generate projects URL (after sign in redirect)
   def after_sign_in_url
-    if is_localhost?
-      # On localhost, don't redirect to subdomain - just go to projects
-      begin
-        projects_path
-      rescue
-        "/projects"
-      end
-    else
-      # In production, redirect to app subdomain
-      app_subdomain_url('/projects')
-    end
+    # Always redirect to app subdomain with projects path
+    app_subdomain_url('/projects')
   end
 
   # Check if currently on marketing domain

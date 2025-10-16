@@ -8,6 +8,9 @@ class VideoAuditsController < ApplicationController
   end
 
   def create
+    # Clear analytics queue to prevent cookie overflow
+    session[:pending_analytics_events] = [] if session[:pending_analytics_events].present?
+
     @audit = current_user.video_audits.build(video_audit_params)
 
     # Track upload start
@@ -73,12 +76,12 @@ class VideoAuditsController < ApplicationController
     @audit = current_user.video_audits.find(params[:id])
 
     # Track audit completion when user first views completed results
-    if @audit.completed? && !session["audit_#{@audit.id}_completion_tracked"]
+    if @audit.completed? && !@audit.completion_tracked?
       begin
         issues_count = @audit.parsed_llm_response.dig('identifiedIssues')&.length if @audit.parsed_llm_response.is_a?(Hash)
         total_duration = (Time.current - @audit.created_at).to_i
         track_audit_completion(@audit.id, total_duration, issues_count)
-        session["audit_#{@audit.id}_completion_tracked"] = true
+        @audit.update_column(:completion_tracked, true)
       rescue => e
         Rails.logger.error "Error tracking audit completion: #{e.message}"
       end

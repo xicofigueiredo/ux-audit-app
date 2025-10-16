@@ -22,6 +22,13 @@ module AnalyticsHelper
       # Use string keys to avoid session serialization issues
       session[:pending_analytics_events] ||= []
       session[:pending_analytics_events] << { 'event' => event_name, 'params' => sanitized_params }
+
+      # Limit queue size to prevent cookie overflow (keep only last 10 events)
+      if session[:pending_analytics_events].length > 10
+        session[:pending_analytics_events] = session[:pending_analytics_events].last(10)
+        Rails.logger.warn "[Analytics] Queue exceeded 10 events, trimmed to last 10"
+      end
+
       Rails.logger.debug "[Analytics] Queued event: #{event_name}, Parameters: #{sanitized_params.to_json}"
     else
       # Background job or other context - just log it

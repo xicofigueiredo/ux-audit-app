@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_08_144350) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_16_140700) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "vector"
@@ -21,6 +21,10 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_08_144350) do
     t.text "image_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "frame_sequence", default: 0
+    t.integer "frame_number"
+    t.boolean "is_primary", default: false
+    t.index ["video_audit_id", "issue_index", "frame_sequence"], name: "index_screenshots_on_audit_issue_sequence"
     t.index ["video_audit_id"], name: "index_issue_screenshots_on_video_audit_id"
   end
 
@@ -64,6 +68,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_08_144350) do
     t.datetime "shared_at"
     t.bigint "user_id", null: false
     t.text "thumbnail_image"
+    t.boolean "completion_tracked", default: false, null: false
     t.index ["jira_epic_key"], name: "index_video_audits_on_jira_epic_key"
     t.index ["share_token"], name: "index_video_audits_on_share_token", unique: true
     t.index ["user_id"], name: "index_video_audits_on_user_id"

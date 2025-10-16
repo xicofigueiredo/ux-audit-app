@@ -18,44 +18,83 @@ You have access to a comprehensive knowledge base of UX/UI design principles, in
 
 Use this knowledge base to ground your analysis in established principles and cite specific heuristics when identifying issues.
 
-### CRITICAL INSTRUCTION: ANALYZE THE ENTIRE FRAME SEQUENCE ###
-The image frames are provided in chronological order and represent a user's journey over time. You MUST analyze the entire sequence and distribute your findings across all relevant frames. A good analysis will reference multiple, different frames.
+### CRITICAL INSTRUCTION: ANALYZE THE ACTUAL FRAMES PROVIDED ###
+The image frames are provided in chronological order and represent a REAL user's journey that you are viewing. You MUST:
+1. Look at the ACTUAL screenshots provided and describe what you SEE in those specific frames
+2. Reference SPECIFIC frame numbers where issues occur (e.g., "Frame 5", "Frames 12-14")
+3. Describe SPECIFIC UI elements visible in the frames (e.g., "the blue 'Submit' button", "the search dropdown menu")
+4. NEVER provide generic heuristic evaluations without connecting them to specific frames
+5. NEVER describe a hypothetical interface - only analyze what is ACTUALLY in the frames
+
+### WARNING: UNACCEPTABLE RESPONSES ###
+DO NOT provide responses like:
+- "Lack of visibility of system status" without specifying which frame shows this
+- "Inconsistent use of terminology" without showing where this appears in the frames
+- Generic lists of heuristic violations that could apply to any interface
+
+EVERY issue must have:
+- A SPECIFIC frameReference (required field)
+- A SPECIFIC painPointTitle describing what is wrong in those frames (required field)
+- An issueDescription that references ACTUAL UI elements you see in the frames
 
 ### YOUR STEP-BY-STEP ANALYTICAL PROCESS ###
 To ensure a world-class audit, you MUST follow this thinking process:
-1.  **Synthesize the Overall Journey:** Review all frames to understand the user's primary goal (e.g., 'User wants to book a one-way flight from Lisbon to London').
-2.  **Deconstruct into Key Steps:** Group the frames into the distinct stages of the journey (e.g., '1. Flight Search', '2. Date Selection', '3. Results Review', '4. Passenger Details').
-3.  **Analyze Each Step for Friction:** For each step, meticulously examine the frames. For every issue you find, you must first state the specific usability principle or heuristic being violated from the knowledge base (e.g., 'This violates Nielsen's Heuristic #6: Recognition rather than recall...' or 'This conflicts with Shneiderman's Golden Rule of consistency...') before describing the problem.
+1.  **Synthesize the Overall Journey:** Review all frames to understand the user's primary goal based on what you SEE in the frames.
+2.  **Deconstruct into Key Steps:** Group the frames into the distinct stages of the journey based on VISIBLE changes in the interface.
+3.  **Analyze Each Step for Friction:** For each step, meticulously examine the frames. For every issue you find, you must:
+     - Note the SPECIFIC frame number(s) where it occurs
+     - State the specific usability principle or heuristic being violated
+     - Describe the SPECIFIC UI elements and interactions you observe in those frames
 
 ### OUTPUT FORMAT: STRICT JSON ###
 - Your entire response MUST be a single, valid JSON object.
 - Do NOT include any text, notes, or explanations outside of the JSON structure. Your response must begin with '{' and end with '}'.
-- NEVER start you output with a non JSON, like "i'm" or any other thing other than a JSON object.
+- NEVER start your output with a non-JSON string like "here is" or "i'm" - start ONLY with '{'
 
+### REQUIRED SCHEMA - EVERY FIELD IS MANDATORY ###
 {
   "workflowSummary": {
-    "workflowtitle": "A short title of the workflow"
-    "userGoal": "A string describing the user's primary objective.",
+    "workflowtitle": "A short title of the workflow based on what you see in the frames",
+    "userGoal": "A string describing the user's primary objective based on the visible UI.",
     "workflowSteps": [
-      "An array of strings listing the distinct workflow steps you identified."
+      "An array of strings listing the distinct workflow steps you identified from the frames."
     ],
-    "totalFramesAnalyzed": "The total number of frames you analyzed."
+    "totalFramesAnalyzed": "The exact number of frames you analyzed (e.g., '25')"
   },
   "identifiedIssues": [
     {
-      "frameReference": "A string indicating the specific frame number(s) where the issue is most evident (e.g., 'Frame 5', 'Frames 12-14').",
-      "painPointTitle": "A concise, descriptive title for the UX issue.",
+      "frameReference": "REQUIRED: Specific frame number(s) where the issue is visible (e.g., 'Frame 5', 'Frames 12-14'). NEVER omit this field.",
+      "painPointTitle": "REQUIRED: A concise, descriptive title for the UX issue you see in the frames. NEVER omit this field.",
       "severity": "A string with one of three exact values: 'High', 'Medium', or 'Low'.",
-      "issueDescription": "A detailed explanation of the problem. Start with the heuristic being violated. Then describe the issue with specific references to UI elements in the frames.",
+      "issueDescription": "A detailed explanation referencing the SPECIFIC UI elements you see in the frames. Start with the heuristic being violated, then describe what you observe.",
       "recommendations": [
-        "An array of strings, where each string is a concrete, actionable recommendation."
+        "An array of strings, where each string is a concrete, actionable recommendation based on the observed issue."
       ]
     }
   ]
 }
 
+### EXAMPLE OF CORRECT OUTPUT ###
+{
+  "workflowSummary": {
+    "workflowtitle": "User Registration Flow",
+    "userGoal": "Complete account registration on the website",
+    "workflowSteps": ["Landing on registration page", "Filling form fields", "Email verification", "Profile completion"],
+    "totalFramesAnalyzed": "15"
+  },
+  "identifiedIssues": [
+    {
+      "frameReference": "Frame 3",
+      "painPointTitle": "Password field lacks visibility of requirements",
+      "severity": "Medium",
+      "issueDescription": "Violates Nielsen's Heuristic #5: Error Prevention. In Frame 3, the password input field is visible but provides no indication of password requirements (length, special characters, etc.). Users can only discover requirements after submission failure.",
+      "recommendations": ["Add real-time password requirements display next to the input field", "Show checkmarks as requirements are met"]
+    }
+  ]
+}
+
   Your response must be a single valid JSON object and nothing else. Do not include any text, notes, or explanations outside the JSON structure. Your response must begin with '{' and end with '}'.
-  **Do not use any other top-level keys. Do not include any text, notes, or explanations outside the JSON object. Your response must begin with '{' and end with '}'.**
+  **Every issue MUST have both frameReference and painPointTitle fields. Responses missing these fields will be rejected.**
   PROMPT
 
   BATCH_SIZE = 20
@@ -72,6 +111,7 @@ To ensure a world-class audit, you MUST follow this thinking process:
     if parsed.is_a?(Hash) && parsed.key?("workflowSummary") && parsed.key?("identifiedIssues")
       return parsed
     end
+
     # Try to map common alternative keys to expected schema
     mapped = {}
     if parsed.is_a?(Hash)
@@ -82,21 +122,63 @@ To ensure a world-class audit, you MUST follow this thinking process:
           "workflowSteps" => parsed["workflowSteps"],
           "totalFramesAnalyzed" => parsed["totalFramesAnalyzed"]
         }
+        # Try to add workflowtitle if present
+        mapped["workflowSummary"]["workflowtitle"] = parsed["workflowtitle"] if parsed.key?("workflowtitle")
       end
-      # Map issues/recommendations
-      if parsed.key?("commonIssues")
-        mapped["identifiedIssues"] = parsed["commonIssues"]
+
+      # Map issues/recommendations with normalization
+      issues_array = nil
+      if parsed.key?("identifiedIssues")
+        issues_array = parsed["identifiedIssues"]
+      elsif parsed.key?("commonIssues")
+        issues_array = parsed["commonIssues"]
       elsif parsed.key?("holisticRecommendations")
-        mapped["identifiedIssues"] = parsed["holisticRecommendations"]
+        issues_array = parsed["holisticRecommendations"]
       end
+
+      # Normalize issues to match expected schema
+      if issues_array.is_a?(Array)
+        mapped["identifiedIssues"] = issues_array.map do |issue|
+          normalize_issue(issue)
+        end
+      end
+
       # If both mapped, return
       if mapped.key?("workflowSummary") && mapped.key?("identifiedIssues")
-        Rails.logger.error("LLM mapping: mapped alternative keys to expected schema")
+        Rails.logger.warn("LLM mapping: mapped alternative keys to expected schema")
         return mapped
       end
     end
     # If not mappable, return original
     parsed
+  end
+
+  def normalize_issue(issue)
+    return issue unless issue.is_a?(Hash)
+
+    normalized = {}
+
+    # Map frameReference (required field)
+    normalized["frameReference"] = issue["frameReference"] || issue["frame"] || "Frame not specified"
+
+    # Map painPointTitle (required field)
+    normalized["painPointTitle"] = issue["painPointTitle"] || issue["title"] || issue["issue"] || "Untitled Issue"
+
+    # Map severity
+    normalized["severity"] = issue["severity"] || "Medium"
+
+    # Map issueDescription
+    description_parts = []
+    description_parts << "Violates: #{issue['heuristic']}" if issue["heuristic"]
+    description_parts << issue["issueDescription"] if issue["issueDescription"]
+    description_parts << issue["description"] if issue["description"]
+    normalized["issueDescription"] = description_parts.any? ? description_parts.join(". ") : "No description provided"
+
+    # Map recommendations
+    normalized["recommendations"] = issue["recommendations"] || issue["recommendation"] || []
+    normalized["recommendations"] = [normalized["recommendations"]] if normalized["recommendations"].is_a?(String)
+
+    normalized
   end
 
   def perform(video_audit_id)
@@ -184,23 +266,34 @@ To ensure a world-class audit, you MUST follow this thinking process:
       begin
         # Use JSON extraction helper for holistic analysis
         parsed_analysis = JSON.parse(extract_json(holistic_analysis))
-        Rails.logger.error("LLM Parsed Analysis: #{parsed_analysis.inspect}")
+        Rails.logger.info("LLM Parsed Analysis: #{parsed_analysis.inspect}")
+
         # Map alternative keys to expected schema if needed
         parsed_analysis = map_llm_output_to_schema(parsed_analysis)
+
         required_keys = %w[workflowSummary identifiedIssues]
         unless required_keys.all? { |k| parsed_analysis.key?(k) }
           # Fallback: unwrap if single top-level key whose value is a Hash with required keys
           if parsed_analysis.is_a?(Hash) && parsed_analysis.keys.size == 1
             inner = parsed_analysis.values.first
             if inner.is_a?(Hash) && required_keys.all? { |k| inner.key?(k) }
-              Rails.logger.error("LLM fallback: unwrapped inner object from key #{parsed_analysis.keys.first}")
+              Rails.logger.warn("LLM fallback: unwrapped inner object from key #{parsed_analysis.keys.first}")
               parsed_analysis = inner
             end
           end
         end
+
         unless required_keys.all? { |k| parsed_analysis.key?(k) }
           raise "LLM response missing required keys: #{parsed_analysis.keys}"
         end
+
+        # Validate response quality
+        validation_errors = validate_llm_response(parsed_analysis)
+        if validation_errors.any?
+          Rails.logger.error("LLM response validation failed: #{validation_errors.join(', ')}")
+          raise "LLM response quality validation failed: #{validation_errors.join(', ')}"
+        end
+
       rescue JSON::ParserError => e
         raise "OpenAI response is not valid JSON: #{e.message}"
       end
@@ -244,6 +337,94 @@ To ensure a world-class audit, you MUST follow this thinking process:
 
   private
 
+  def validate_llm_response(parsed_analysis)
+    errors = []
+
+    # Check if we have issues
+    issues = parsed_analysis.dig('identifiedIssues')
+    if issues.nil? || !issues.is_a?(Array) || issues.empty?
+      errors << "No issues identified in response"
+      return errors
+    end
+
+    # Check each issue for required fields and quality
+    issues.each_with_index do |issue, idx|
+      unless issue.is_a?(Hash)
+        errors << "Issue ##{idx} is not a hash"
+        next
+      end
+
+      # Check for required frameReference field
+      frame_ref = issue['frameReference']
+      if frame_ref.nil? || frame_ref.to_s.strip.empty?
+        errors << "Issue ##{idx} missing frameReference"
+      elsif frame_ref.to_s.downcase.include?('not specified') || frame_ref.to_s.strip == ""
+        errors << "Issue ##{idx} has placeholder frameReference: '#{frame_ref}'"
+      end
+
+      # Check for required painPointTitle field
+      title = issue['painPointTitle']
+      if title.nil? || title.to_s.strip.empty?
+        errors << "Issue ##{idx} missing painPointTitle"
+      elsif title.to_s.downcase.include?('untitled') || title.to_s.strip.length < 10
+        errors << "Issue ##{idx} has generic/placeholder painPointTitle: '#{title}'"
+      end
+
+      # Check for generic heuristic-only responses (likely not frame-specific)
+      description = issue['issueDescription'].to_s
+      if description.empty?
+        errors << "Issue ##{idx} has empty issueDescription"
+      elsif is_generic_response?(description, title.to_s)
+        errors << "Issue ##{idx} appears to be a generic heuristic evaluation without frame-specific details"
+      end
+    end
+
+    # Check if ALL issues seem generic (likely a failed analysis)
+    if issues.length > 5 && issues.all? { |i| is_generic_issue?(i) }
+      errors << "All issues appear to be generic heuristic evaluations rather than frame-specific analysis"
+    end
+
+    errors
+  end
+
+  def is_generic_response?(description, title)
+    # Check if response is just a generic heuristic statement without specific UI details
+    generic_patterns = [
+      /^(lack of|no|insufficient|inadequate|poor)/i,
+      /^(inconsistent|unclear|vague|ambiguous)/i,
+      /without (specific|clear|explicit) (reference|mention|detail)/i
+    ]
+
+    # If description is very short and matches generic patterns, it's likely generic
+    if description.length < 100 && generic_patterns.any? { |pattern| title.match?(pattern) }
+      return true
+    end
+
+    # Check if description has specific UI element references (expanded list)
+    has_ui_specifics = description.match?(/button|field|menu|dropdown|icon|label|form|input|text|image|link|nav|header|footer|modal|dialog|checkbox|radio|toggle|slider|card|panel|section|div|element|bar|indicator|feedback|message|notification|timer|counter|display|screen|page|view/i)
+
+    # Also accept if it mentions workflow/process/interaction patterns
+    has_workflow_mentions = description.match?(/progress|selection|cancellation|recording|session|duration|time|endpoint|step|action|requirement|visible|visibility|status|state|indication/i)
+
+    # Only reject if BOTH are missing AND description is short
+    !has_ui_specifics && !has_workflow_mentions && description.length < 150
+  end
+
+  def is_generic_issue?(issue)
+    return true unless issue.is_a?(Hash)
+
+    frame_ref = issue['frameReference'].to_s
+    title = issue['painPointTitle'].to_s
+    description = issue['issueDescription'].to_s
+
+    # Check for placeholder or missing values
+    return true if frame_ref.include?('not specified') || frame_ref.strip.empty?
+    return true if title.include?('Untitled') || title.strip.length < 10
+    return true if is_generic_response?(description, title)
+
+    false
+  end
+
   def get_ux_knowledge_context_for_batch(batch, batch_index)
     # For now, get general UX principles for each batch
     # In the future, this could be more sophisticated by analyzing frame content
@@ -271,27 +452,38 @@ To ensure a world-class audit, you MUST follow this thinking process:
       frame_reference = issue['frameReference']
       next unless frame_reference.present?
 
-      # Extract frame number from reference (e.g., "Frame 5" -> 5, "Frames 12-14" -> 12)
-      frame_number = extract_first_frame_number(frame_reference)
-      next unless frame_number
-
-      # Find the corresponding frame file
-      frame_file = find_frame_file(frame_paths, frame_number)
-      next unless frame_file && File.exist?(frame_file)
-
       begin
-        # Read and encode the frame as base64
-        image_data = Base64.strict_encode64(File.read(frame_file))
+        # Extract AI's referenced frames
+        ai_frames = extract_frame_range(frame_reference)
+        next if ai_frames.empty?
 
-        # Create IssueScreenshot record
-        audit.issue_screenshots.create!(
-          issue_index: index,
-          image_data: image_data
-        )
+        # Expand with context (±2 frames) and cap at 7 frames max
+        all_frames = expand_frame_range(ai_frames, context_frames: 2, max_frames: 7)
 
-        Rails.logger.info "Saved screenshot for issue ##{index} from #{frame_file}"
+        Rails.logger.info "Issue ##{index}: AI frames #{ai_frames.inspect}, expanded to #{all_frames.inspect}"
+
+        # Save all frames in the expanded range
+        all_frames.each_with_index do |frame_num, seq|
+          frame_file = find_frame_file(frame_paths, frame_num)
+          next unless frame_file && File.exist?(frame_file)
+
+          # Read and encode the frame as base64
+          image_data = Base64.strict_encode64(File.read(frame_file))
+
+          # Create IssueScreenshot record
+          audit.issue_screenshots.create!(
+            issue_index: index,
+            frame_sequence: seq,
+            frame_number: frame_num,
+            is_primary: ai_frames.include?(frame_num),
+            image_data: image_data
+          )
+
+          Rails.logger.info "Saved frame #{frame_num} (seq: #{seq}, primary: #{ai_frames.include?(frame_num)}) for issue ##{index}"
+        end
       rescue => e
-        Rails.logger.error "Failed to save screenshot for issue ##{index}: #{e.message}"
+        Rails.logger.error "Failed to save screenshots for issue ##{index}: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
       end
     end
   end
@@ -300,6 +492,57 @@ To ensure a world-class audit, you MUST follow this thinking process:
     # Handle various formats: "Frame 5", "Frames 12-14", "Frame 3", etc.
     match = frame_reference.match(/\d+/)
     match ? match[0].to_i : nil
+  end
+
+  def extract_frame_range(frame_reference)
+    # Extract all frame numbers from reference
+    # "Frame 5" → [5]
+    # "Frames 12-14" → [12, 13, 14]
+    # "Frame 10, 12-14" → [10, 12, 13, 14]
+    return [] unless frame_reference.present?
+
+    frames = []
+
+    # Match range patterns like "12-14"
+    frame_reference.scan(/(\d+)-(\d+)/).each do |start_frame, end_frame|
+      frames.concat((start_frame.to_i..end_frame.to_i).to_a)
+    end
+
+    # Match single frame patterns like "Frame 5"
+    frame_reference.scan(/\b(\d+)\b/).each do |match|
+      frame_num = match[0].to_i
+      frames << frame_num unless frames.include?(frame_num)
+    end
+
+    frames.uniq.sort
+  end
+
+  def expand_frame_range(ai_frames, context_frames: 2, max_frames: 7)
+    # Expand AI's referenced frames with context
+    # ai_frames: [12] → returns [10, 11, 12, 13, 14]
+    # ai_frames: [12, 13, 14] → returns [10, 11, 12, 13, 14, 15, 16]
+    return [] if ai_frames.empty?
+
+    expanded = []
+    ai_frames.each do |frame|
+      range_start = [frame - context_frames, 1].max
+      range_end = frame + context_frames
+      expanded.concat((range_start..range_end).to_a)
+    end
+
+    expanded = expanded.uniq.sort
+
+    # Cap at max_frames to avoid carousel bloat
+    if expanded.length > max_frames
+      # Find the center point (middle of AI's range)
+      mid_point = ai_frames[ai_frames.length / 2]
+      half_range = max_frames / 2
+      range_start = [mid_point - half_range, 1].max
+      range_end = mid_point + half_range
+      expanded = (range_start..range_end).to_a
+    end
+
+    expanded
   end
 
   def find_frame_file(frame_paths, frame_number)

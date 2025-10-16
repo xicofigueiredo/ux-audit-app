@@ -9,6 +9,12 @@ Rails.application.routes.draw do
     mount Sidekiq::Web => '/sidekiq'
   end
 
+  # Devise authentication (available on all domains for sign in/sign out)
+  devise_for :users, controllers: {
+    sessions: 'users/sessions',
+    registrations: 'users/registrations'
+  }
+
   # Web App Routes (app.uxauditapp.com or app.uxauditapp.local)
   constraints(Constraints::SubdomainConstraint.new('app')) do
     # Authenticated application routes
@@ -33,12 +39,6 @@ Rails.application.routes.draw do
 
   # Marketing Site Routes (uxauditapp.com, www.uxauditapp.com, and localhost in development)
   constraints(Constraints::SubdomainConstraint.new(nil, 'www')) do
-    # Devise authentication (sign in/sign up on marketing domain)
-    devise_for :users, controllers: {
-      sessions: 'users/sessions',
-      registrations: 'users/registrations'
-    }
-
     # Public marketing pages
     root "pages#home", as: :marketing_root
     get "demo" => "pages#demo"
