@@ -12,7 +12,7 @@ class LlmConfigTest < ActiveSupport::TestCase
   end
 
   test "default values are set correctly" do
-    assert_equal 'gpt-5o', LlmConfig.model
+    assert_equal 'gpt-5', LlmConfig.model
     assert_equal 0.1, LlmConfig.temperature
     assert_equal 4000, LlmConfig.max_tokens
     assert_equal 50, LlmConfig.batch_size
@@ -39,7 +39,7 @@ class LlmConfigTest < ActiveSupport::TestCase
   end
 
   test "gpt_5? returns true for gpt-5 models" do
-    ENV['GPT_MODEL'] = 'gpt-5o'
+    ENV['GPT_MODEL'] = 'gpt-5'
     assert LlmConfig.gpt_5?
     refute LlmConfig.gpt_4?
   end
@@ -77,7 +77,7 @@ class LlmConfigTest < ActiveSupport::TestCase
     ENV['OPENAI_API_KEY'] = 'test-key'
     config_hash = LlmConfig.to_hash
     
-    assert_equal 'gpt-5o', config_hash[:model]
+    assert_equal 'gpt-5', config_hash[:model]
     assert_equal 0.1, config_hash[:temperature]
     assert_equal 4000, config_hash[:max_tokens]
     assert_equal 50, config_hash[:batch_size]

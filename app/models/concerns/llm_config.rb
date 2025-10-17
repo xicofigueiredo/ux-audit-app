@@ -5,7 +5,7 @@ module LlmConfig
 
   # Default configuration values
   DEFAULTS = {
-    model: 'gpt-5o',
+    model: 'gpt-5',
     temperature: 0.1,
     max_tokens: 4000,
     batch_size: 50,
@@ -14,7 +14,7 @@ module LlmConfig
 
   # Supported models with fallbacks
   SUPPORTED_MODELS = {
-    'gpt-5o' => 'gpt-5o',
+    'gpt-5' => 'gpt-5',
     'gpt-4o' => 'gpt-4o',
     'gpt-4-turbo' => 'gpt-4-turbo-preview'
   }.freeze

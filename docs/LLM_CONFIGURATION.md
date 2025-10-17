@@ -10,7 +10,7 @@ This document describes how to configure the LLM analysis system for the UX Audi
 
 ### Optional Variables (with defaults)
 
-- `GPT_MODEL`: The GPT model to use (default: `gpt-5o`)
+- `GPT_MODEL`: The GPT model to use (default: `gpt-5`)
 - `GPT_TEMPERATURE`: Controls randomness in responses (default: `0.1`)
 - `GPT_MAX_TOKENS`: Maximum tokens for responses (default: `4000`)
 - `GPT_BATCH_SIZE`: Number of frames to process per batch (default: `50`)
@@ -18,7 +18,7 @@ This document describes how to configure the LLM analysis system for the UX Audi
 
 ## Supported Models
 
-- `gpt-5o`: Latest GPT-5 model (recommended)
+- `gpt-5`: Latest GPT-5 model (recommended)
 
 ## Configuration Validation
 
@@ -60,7 +60,7 @@ config = LlmConfig.to_hash
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Model Configuration
-GPT_MODEL=gpt-5o
+GPT_MODEL=gpt-5
 GPT_TEMPERATURE=0.1
 GPT_MAX_TOKENS=4000
 GPT_BATCH_SIZE=50

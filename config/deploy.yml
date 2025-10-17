@@ -70,6 +70,8 @@ env:
     REDIS_URL: redis://143.110.169.251:6380/0
     RAILS_MAX_THREADS: 8
     WEB_CONCURRENCY: 2
+    # Hybrid model: GPT-4o (vision) + GPT-5 (synthesis), models hardcoded in LlmAnalysisJob
+    GPT_MODEL: gpt-4o
   secret:
     - RAILS_MASTER_KEY
     - OPENAI_API_KEY

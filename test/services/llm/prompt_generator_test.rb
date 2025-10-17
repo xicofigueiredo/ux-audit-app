@@ -6,8 +6,8 @@ class Llm::PromptGeneratorTest < ActiveSupport::TestCase
     @generator = Llm::PromptGenerator.new
   end
 
-  test "initializes with correct system message for gpt-5o" do
-    ENV['GPT_MODEL'] = 'gpt-5o'
+  test "initializes with correct system message for gpt-5" do
+    ENV['GPT_MODEL'] = 'gpt-5'
     generator = Llm::PromptGenerator.new
     
     assert_includes generator.send(:instance_variable_get, :@system_message), "15+ years of experience"
@@ -44,7 +44,7 @@ class Llm::PromptGeneratorTest < ActiveSupport::TestCase
   end
 
   test "generates function parameters for gpt-5" do
-    ENV['GPT_MODEL'] = 'gpt-5o'
+    ENV['GPT_MODEL'] = 'gpt-5'
     generator = Llm::PromptGenerator.new
     
     params = generator.generate_function_parameters

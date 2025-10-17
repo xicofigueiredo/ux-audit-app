@@ -5,7 +5,7 @@ module Llm
 
     # Enhanced system message templates for different models
     SYSTEM_MESSAGES = {
-      'gpt-5o' => <<~SYSTEM,
+      'gpt-5' => <<~SYSTEM,
         You are a highly sought-after UX/UI Principal Analyst with 15+ years of experience in user experience design and usability testing. Your insights are specific, actionable, and grounded in established usability heuristics like Nielsen's 10 Usability Heuristics and Norman's Design Principles.
 
         Your expertise includes:

@@ -16,7 +16,7 @@ class Llm::FunctionCallingServiceTest < ActiveSupport::TestCase
   end
 
   test "function calling supported for gpt-5" do
-    ENV['GPT_MODEL'] = 'gpt-5o'
+    ENV['GPT_MODEL'] = 'gpt-5'
     ENV['ENABLE_FUNCTION_CALLING'] = 'true'
     
     assert @service.function_calling_supported?
@@ -30,14 +30,14 @@ class Llm::FunctionCallingServiceTest < ActiveSupport::TestCase
   end
 
   test "function calling disabled by environment variable" do
-    ENV['GPT_MODEL'] = 'gpt-5o'
+    ENV['GPT_MODEL'] = 'gpt-5'
     ENV['ENABLE_FUNCTION_CALLING'] = 'false'
     
     refute @service.function_calling_supported?
   end
 
   test "api parameters returns function calling config for gpt-5" do
-    ENV['GPT_MODEL'] = 'gpt-5o'
+    ENV['GPT_MODEL'] = 'gpt-5'
     ENV['ENABLE_FUNCTION_CALLING'] = 'true'
     
     params = @service.api_parameters

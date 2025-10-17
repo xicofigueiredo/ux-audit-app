@@ -20,7 +20,7 @@ Rails.application.config.after_initialize do
       puts e.message
       puts "\nPlease ensure you have set the following environment variables:"
       puts "- OPENAI_API_KEY"
-      puts "- GPT_MODEL (optional, defaults to gpt-5o)"
+      puts "- GPT_MODEL (optional, defaults to gpt-5)"
       puts "- GPT_TEMPERATURE (optional, defaults to 0.1)"
       puts "- GPT_MAX_TOKENS (optional, defaults to 4000)"
       puts "- GPT_BATCH_SIZE (optional, defaults to 50)"

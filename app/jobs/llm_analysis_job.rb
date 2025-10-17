@@ -4,6 +4,7 @@ require 'json'
 
 class LlmAnalysisJob < ApplicationJob
   include AnalyticsHelper
+  include LlmConfig
   queue_as :default
   retry_on StandardError, wait: :exponentially_longer, attempts: 3
 
@@ -243,6 +244,9 @@ To ensure a world-class audit, you MUST follow this thinking process:
       request_timeout: 300
     )
     begin
+      # MODEL APPROACH:
+      # - Using GPT-4o for both batch analysis (vision) and synthesis
+      # - GPT-5 tested but not yet stable for complex synthesis tasks (returns empty responses)
       frame_paths.each_slice(BATCH_SIZE).with_index do |batch, idx|
         # Get relevant UX knowledge context for this batch
         ux_context = get_ux_knowledge_context_for_batch(batch, idx)
@@ -256,7 +260,8 @@ To ensure a world-class audit, you MUST follow this thinking process:
         messages = [
           { role: "user", content: [{ type: "text", text: prompt }] + batch.map { |frame| { type: "image_url", image_url: { url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}", detail: "low" } } } }
         ]
-        response = client.chat(parameters: { model: "gpt-4o", messages: messages, max_tokens: 3072 })
+        # Use GPT-4o for vision processing (proven to work with multiple images + bounding boxes)
+        response = client.chat(parameters: { model: 'gpt-4o', messages: messages, max_tokens: llm_max_tokens })
         summary = response.dig("choices", 0, "message", "content")
         # Use JSON extraction helper for batch summary
         extracted_summary = extract_json(summary)
@@ -289,19 +294,40 @@ To ensure a world-class audit, you MUST follow this thinking process:
             "workflowSteps": [],
             "totalFramesAnalyzed": ""
           },
-          "identifiedIssues": []
+          "identifiedIssues": [
+            {
+              "frameReference": "Frame X or Frames X-Y",
+              "painPointTitle": "Issue title",
+              "severity": "High/Medium/Low",
+              "issueDescription": "Description",
+              "recommendations": ["Recommendation 1", "Recommendation 2"],
+              "elementRef": {
+                "type": "vision or unknown",
+                "elementLabel": "Element description",
+                "boundingBox": {"x": 0, "y": 0, "width": 0, "height": 0},
+                "confidence": 0.0
+              },
+              "groundingNotes": "Optional notes"
+            }
+          ]
         }
 
-        Instructions:
-        - Fill in the values for each field based on the batch findings.
-        - Ensure all issues reference specific heuristics from the knowledge base.
-        - Do not add any other keys or text.
-        - Your response must begin with '{' and end with '}'.
+        CRITICAL INSTRUCTIONS:
+        - PRESERVE all frameReference values from the batch findings exactly as they appear
+        - PRESERVE all elementRef objects from the batch findings (including type, elementLabel, boundingBox, confidence)
+        - Every issue MUST have a frameReference field (e.g., "Frame 5" or "Frames 12-14")
+        - Every issue MUST have an elementRef object with at minimum: type and elementLabel
+        - If batch findings contain elementRef data, you MUST include it in the synthesis
+        - Merge duplicate issues but keep the most detailed elementRef and frameReference data
+        - Ensure all issues reference specific heuristics from the knowledge base
+        - Do not add any other keys or text
+        - Your response must begin with '{' and end with '}'
       PROMPT
       messages = [
         { role: "user", content: [{ type: "text", text: synthesis_prompt }] }
       ]
-      response = client.chat(parameters: { model: "gpt-4o", messages: messages, max_tokens: 3072 })
+      # Use GPT-4o for synthesis (GPT-5 not yet stable for complex synthesis tasks)
+      response = client.chat(parameters: { model: 'gpt-4o', messages: messages, max_tokens: llm_max_tokens })
       holistic_analysis = response.dig("choices", 0, "message", "content")
       begin
         # Use JSON extraction helper for holistic analysis
