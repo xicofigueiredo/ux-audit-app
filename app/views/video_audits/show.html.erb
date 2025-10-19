@@ -9,6 +9,16 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <%= stylesheet_link_tag "application" %>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Prevent FOUC (Flash of Unstyled Content) */
+      .analysis-app-container {
+        opacity: 0;
+        transition: opacity 0.15s ease-in;
+      }
+      .analysis-app-container.loaded {
+        opacity: 1;
+      }
+    </style>
   </head>
   <body class="bg-gray-100">
     <div class="flex h-screen bg-gray-100">
@@ -2668,6 +2678,14 @@ if (showAllBtn) {
     highlightCard('all');
   });
 }
+
+// Prevent FOUC by revealing content when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  const containers = document.querySelectorAll('.analysis-app-container');
+  containers.forEach(function(container) {
+    container.classList.add('loaded');
+  });
+});
 </script>
 <% end %>
         </main>
