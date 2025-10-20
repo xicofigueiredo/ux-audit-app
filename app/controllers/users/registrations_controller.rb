@@ -6,6 +6,12 @@ class Users::RegistrationsController < Devise::RegistrationsController
     super do |resource|
       if resource.persisted?
         track_user_signup
+        # Identify user in Mixpanel
+        identify_user(resource.id, {
+          '$email': resource.email,
+          '$created': resource.created_at.iso8601,
+          'User ID': resource.id
+        })
       end
     end
   end

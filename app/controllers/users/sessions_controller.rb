@@ -6,6 +6,13 @@ class Users::SessionsController < Devise::SessionsController
     super do |resource|
       if resource.persisted?
         track_user_login
+        # Identify user in Mixpanel
+        identify_user(resource.id, {
+          '$email': resource.email,
+          '$created': resource.created_at.iso8601,
+          'User ID': resource.id,
+          'Audit Count': resource.respond_to?(:video_audits) ? resource.video_audits.count : 0
+        })
         # Redirect to app subdomain after sign in, allowing cross-host redirect
         return redirect_to after_sign_in_path_for(resource), allow_other_host: true
       end

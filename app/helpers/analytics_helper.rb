@@ -9,19 +9,27 @@ module AnalyticsHelper
       sanitized_params.merge!(get_user_context)
     end
 
+    # Track to GA4
+    track_ga4_event(event_name, sanitized_params)
+
+    # Track to Mixpanel
+    track_mixpanel_event(event_name, sanitized_params)
+  end
+
+  def track_ga4_event(event_name, parameters = {})
     # Check if we're in a view context or controller context
     if respond_to?(:content_for, true) && !is_a?(ActionController::Base)
       # We're in a view - use content_for directly
       content_for :analytics_events do
         javascript_tag nonce: true do
-          raw "gtag('event', '#{event_name}', #{sanitized_params.to_json});"
+          raw "gtag('event', '#{event_name}', #{parameters.to_json});"
         end
       end
     elsif defined?(session) && respond_to?(:session)
       # We're in a controller - store event in session for next render
       # Use string keys to avoid session serialization issues
       session[:pending_analytics_events] ||= []
-      session[:pending_analytics_events] << { 'event' => event_name, 'params' => sanitized_params }
+      session[:pending_analytics_events] << { 'event' => event_name, 'params' => parameters }
 
       # Limit queue size to prevent cookie overflow (keep only last 10 events)
       if session[:pending_analytics_events].length > 10
@@ -29,10 +37,56 @@ module AnalyticsHelper
         Rails.logger.warn "[Analytics] Queue exceeded 10 events, trimmed to last 10"
       end
 
-      Rails.logger.debug "[Analytics] Queued event: #{event_name}, Parameters: #{sanitized_params.to_json}"
+      Rails.logger.debug "[Analytics] Queued GA4 event: #{event_name}, Parameters: #{parameters.to_json}"
     else
       # Background job or other context - just log it
-      Rails.logger.info "[Analytics] Event: #{event_name}, Parameters: #{sanitized_params.to_json}"
+      Rails.logger.info "[Analytics] GA4 Event: #{event_name}, Parameters: #{parameters.to_json}"
+    end
+  end
+
+  def track_mixpanel_event(event_name, parameters = {})
+    # Check if we're in a view context or controller context
+    if respond_to?(:content_for, true) && !is_a?(ActionController::Base)
+      # We're in a view - use content_for directly
+      content_for :analytics_events do
+        javascript_tag nonce: true do
+          raw "if (window.mixpanel) { mixpanel.track('#{event_name}', #{parameters.to_json}); }"
+        end
+      end
+    elsif defined?(session) && respond_to?(:session)
+      # We're in a controller - store event in session for next render
+      session[:pending_mixpanel_events] ||= []
+      session[:pending_mixpanel_events] << { 'event' => event_name, 'params' => parameters }
+
+      # Limit queue size to prevent cookie overflow (keep only last 10 events)
+      if session[:pending_mixpanel_events].length > 10
+        session[:pending_mixpanel_events] = session[:pending_mixpanel_events].last(10)
+        Rails.logger.warn "[Analytics] Mixpanel queue exceeded 10 events, trimmed to last 10"
+      end
+
+      Rails.logger.debug "[Analytics] Queued Mixpanel event: #{event_name}, Parameters: #{parameters.to_json}"
+    else
+      # Background job or other context - just log it
+      Rails.logger.info "[Analytics] Mixpanel Event: #{event_name}, Parameters: #{parameters.to_json}"
+    end
+  end
+
+  def identify_user(user_id, properties = {})
+    return unless Rails.env.production? || Rails.env.development?
+
+    if respond_to?(:content_for, true) && !is_a?(ActionController::Base)
+      content_for :analytics_events do
+        javascript_tag nonce: true do
+          raw <<~JS
+            if (window.mixpanel) {
+              mixpanel.identify('#{user_id}');
+              mixpanel.people.set(#{properties.to_json});
+            }
+          JS
+        end
+      end
+    elsif defined?(session) && respond_to?(:session)
+      session[:pending_mixpanel_identify] = { 'user_id' => user_id, 'properties' => properties }
     end
   end
 
@@ -208,19 +262,57 @@ module AnalyticsHelper
 
   # Render queued analytics events from session
   def render_queued_analytics_events
-    return unless defined?(session) && session[:pending_analytics_events].present?
+    return unless defined?(session)
 
-    events = session[:pending_analytics_events]
-    session.delete(:pending_analytics_events) # Clear the queue
+    output = []
 
-    javascript_tag nonce: content_security_policy_nonce do
-      events.map do |event_data|
-        # Handle both symbol and string keys (Rails session serialization may convert symbols to strings)
-        event_name = event_data[:event] || event_data['event']
-        params = event_data[:params] || event_data['params'] || {}
-        "gtag('event', '#{event_name}', #{params.to_json});"
-      end.join("\n")
+    # Render GA4 events
+    if session[:pending_analytics_events].present?
+      ga4_events = session[:pending_analytics_events]
+      session.delete(:pending_analytics_events)
+
+      output << javascript_tag(nonce: content_security_policy_nonce) do
+        ga4_events.map do |event_data|
+          event_name = event_data[:event] || event_data['event']
+          params = event_data[:params] || event_data['params'] || {}
+          "gtag('event', '#{event_name}', #{params.to_json});"
+        end.join("\n")
+      end
     end
+
+    # Render Mixpanel events
+    if session[:pending_mixpanel_events].present?
+      mixpanel_events = session[:pending_mixpanel_events]
+      session.delete(:pending_mixpanel_events)
+
+      output << javascript_tag(nonce: content_security_policy_nonce) do
+        mixpanel_events.map do |event_data|
+          event_name = event_data[:event] || event_data['event']
+          params = event_data[:params] || event_data['params'] || {}
+          "if (window.mixpanel) { mixpanel.track('#{event_name}', #{params.to_json}); }"
+        end.join("\n")
+      end
+    end
+
+    # Render Mixpanel identify
+    if session[:pending_mixpanel_identify].present?
+      identify_data = session[:pending_mixpanel_identify]
+      session.delete(:pending_mixpanel_identify)
+
+      user_id = identify_data[:user_id] || identify_data['user_id']
+      properties = identify_data[:properties] || identify_data['properties'] || {}
+
+      output << javascript_tag(nonce: content_security_policy_nonce) do
+        raw <<~JS
+          if (window.mixpanel) {
+            mixpanel.identify('#{user_id}');
+            mixpanel.people.set(#{properties.to_json});
+          }
+        JS
+      end
+    end
+
+    safe_join(output)
   end
 
   # Page Performance Tracking

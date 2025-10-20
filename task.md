@@ -4,7 +4,7 @@
 
 ### 1.1 Environment Configuration ✅
 - [x] Add environment variables for model configuration
-  - [x] `GPT_MODEL` (default: gpt-5o)
+  - [x] `GPT_MODEL` (default: gpt-5)
   - [x] `GPT_TEMPERATURE` (default: 0.1)
   - [x] `GPT_MAX_TOKENS` (default: 4000)
   - [x] `GPT_BATCH_SIZE` (default: 50)

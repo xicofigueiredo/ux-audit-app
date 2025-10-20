@@ -11,21 +11,24 @@ Rails.application.configure do
     policy.img_src     :self, :https, :data
     policy.object_src  :none
 
-    # Allow Google Analytics and Tailwind CDN scripts with specific nonce handling
+    # Allow Google Analytics, Mixpanel, and Tailwind CDN scripts with specific nonce handling
     policy.script_src  :self, :https,
                        'https://www.googletagmanager.com',
                        'https://www.google-analytics.com',
-                       'https://cdn.tailwindcss.com'
+                       'https://cdn.tailwindcss.com',
+                       'https://cdn.mxpnl.com',
+                       'http://cdn.mxpnl.com'
 
     # Allow inline styles for Tailwind and custom styling
     policy.style_src   :self, :https, :unsafe_inline,
                        'https://cdn.tailwindcss.com'
 
-    # Allow Google Analytics connections
+    # Allow Google Analytics and Mixpanel connections
     policy.connect_src :self, :https,
                        'https://www.google-analytics.com',
                        'https://analytics.google.com',
-                       'https://region1.google-analytics.com'
+                       'https://region1.google-analytics.com',
+                       'https://api-eu.mixpanel.com'
 
     # Specify URI for violation reports
     # policy.report_uri "/csp-violation-report-endpoint"
