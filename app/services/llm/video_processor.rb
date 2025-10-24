@@ -110,11 +110,11 @@ module Llm
     def extract_frames(video_path, frames_dir)
       log_info("Extracting frames", video_path: video_path, frames_dir: frames_dir)
 
-      # Use FFmpeg to extract frames (2 frames per second)
+      # Use FFmpeg to extract frames (3 frames per second)
       require 'shellwords'
       output_pattern = "#{frames_dir}/frame_%04d.jpg"
 
-      command = "ffmpeg -i #{Shellwords.escape(video_path)} -vf fps=2 #{Shellwords.escape(output_pattern)}"
+      command = "ffmpeg -i #{Shellwords.escape(video_path)} -vf fps=3 #{Shellwords.escape(output_pattern)}"
       
       log_info("Running FFmpeg command", command: command)
       

@@ -5,7 +5,6 @@ module Llm
 
     def initialize
       super
-      @prompt_generator = PromptGenerator.new
       @response_parser = ResponseParser.new
       @video_processor = VideoProcessor.new
       @function_calling_service = FunctionCallingService.new
@@ -15,37 +14,43 @@ module Llm
     # Main analysis workflow
     def analyze_video(audit_id)
       log_info("Starting video analysis", audit_id: audit_id)
-      
+
       audit = VideoAudit.find(audit_id)
       audit.update!(status: 'processing')
-      
+
       begin
+        # Initialize prompt generator with user and audit context
+        @prompt_generator = PromptGenerator.new(
+          user: audit.user,
+          video_audit: audit
+        )
+
         # Step 1: Process video and extract frames
         frame_paths = @video_processor.process_video(audit.video.path, audit_id)
         audit.update!(frames: frame_paths)
-        
+
         # Step 2: Create batches and process each batch
         batches = @video_processor.create_batches(frame_paths)
         batch_results = process_batches(batches, audit_id)
-        
+
         # Step 3: Synthesize results into final analysis
         final_analysis = synthesize_results(batch_results, audit_id)
-        
+
         # Step 4: Update audit with results
         audit.update!(
           status: 'completed',
           llm_response: final_analysis[:data],
           score: final_analysis[:quality_score]
         )
-        
-        log_info("Analysis completed successfully", 
+
+        log_info("Analysis completed successfully",
           audit_id: audit_id,
           quality_score: final_analysis[:quality_score]
         )
-        
+
         # Step 5: Schedule cleanup
         CleanupJob.perform_later(audit_id)
-        
+
         final_analysis
       rescue => error
         log_error("Analysis failed", error: error, audit_id: audit_id)

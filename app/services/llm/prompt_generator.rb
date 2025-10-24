@@ -120,15 +120,18 @@ module Llm
       }
     ].freeze
 
-    def initialize
-      super
+    def initialize(user: nil, video_audit: nil)
+      super()
       @system_message = SYSTEM_MESSAGES[llm_model] || SYSTEM_MESSAGES['gpt-4o']
+      @user = user
+      @video_audit = video_audit
+      @knowledge_context = fetch_knowledge_context if @user && @video_audit
     end
 
     # Generate prompts for batch analysis
     def generate_batch_prompt(batch_frames, batch_index, total_frames)
       {
-        system_message: @system_message,
+        system_message: system_message_with_knowledge,
         user_message: build_batch_user_message(batch_frames, batch_index, total_frames),
         temperature: llm_temperature,
         max_tokens: llm_max_tokens
@@ -138,7 +141,7 @@ module Llm
     # Generate prompts for synthesis/combining results
     def generate_synthesis_prompt(batch_summaries)
       {
-        system_message: @system_message,
+        system_message: system_message_with_knowledge,
         user_message: build_synthesis_user_message(batch_summaries),
         temperature: llm_temperature,
         max_tokens: llm_max_tokens
@@ -227,6 +230,49 @@ module Llm
     end
 
     private
+
+    def fetch_knowledge_context
+      return nil unless @user&.knowledge_base_enabled?
+
+      analysis_context = build_analysis_context
+      UxKnowledgeRetrievalService.new.retrieve_for_user_audit(analysis_context, @user)
+    rescue => e
+      Rails.logger.error("Failed to fetch knowledge context: #{e.message}")
+      nil
+    end
+
+    def build_analysis_context
+      context_parts = []
+      context_parts << "UX audit"
+      context_parts << "of #{@video_audit.title}" if @video_audit.title.present?
+      context_parts << @video_audit.description if @video_audit.description.present?
+      context_parts.join(" ")
+    end
+
+    def system_message_with_knowledge
+      base_message = @system_message
+
+      if @knowledge_context.present?
+        base_message + "\n\n" + knowledge_context_section
+      else
+        base_message
+      end
+    end
+
+    def knowledge_context_section
+      <<~KNOWLEDGE
+
+        === REFERENCE MATERIALS ===
+        The following curated UX knowledge has been selected based on user preferences
+        to inform your analysis. Use these as authoritative references, but maintain
+        focus on observable issues in the interface.
+
+        #{@knowledge_context}
+
+        ===========================
+
+      KNOWLEDGE
+    end
 
     def build_batch_user_message(batch_frames, batch_index, total_frames)
       frame_range = "#{batch_index * llm_batch_size + 1}-#{[total_frames, (batch_index + 1) * llm_batch_size].min}"

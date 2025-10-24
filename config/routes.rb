@@ -32,6 +32,8 @@ Rails.application.routes.draw do
 
     # Settings
     get 'settings', to: 'settings#index', as: :settings
+    patch 'settings/update_knowledge_preference', to: 'settings#update_knowledge_preference', as: :update_knowledge_preference_settings
+    post 'settings/reset_knowledge_preferences', to: 'settings#reset_knowledge_preferences', as: :reset_knowledge_preferences_settings
 
     # Root of app subdomain goes to projects
     root "projects#index", as: :app_root
@@ -70,5 +72,7 @@ Rails.application.routes.draw do
 
     # Settings (accessible without subdomain on localhost)
     get 'settings', to: 'settings#index' unless defined?(settings_path)
+    patch 'settings/update_knowledge_preference', to: 'settings#update_knowledge_preference' unless defined?(update_knowledge_preference_settings_path)
+    post 'settings/reset_knowledge_preferences', to: 'settings#reset_knowledge_preferences' unless defined?(reset_knowledge_preferences_settings_path)
   end
 end

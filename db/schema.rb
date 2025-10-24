@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_17_214329) do
+ActiveRecord::Schema[7.1].define(version: 2025_10_23_101841) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "vector"
@@ -28,6 +28,19 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_17_214329) do
     t.index ["video_audit_id"], name: "index_issue_screenshots_on_video_audit_id"
   end
 
+  create_table "knowledge_base_categories", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.text "description"
+    t.text "use_case"
+    t.boolean "default_enabled", default: false
+    t.integer "position", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position"], name: "index_knowledge_base_categories_on_position"
+    t.index ["slug"], name: "index_knowledge_base_categories_on_slug", unique: true
+  end
+
   create_table "llm_partial_responses", force: :cascade do |t|
     t.bigint "video_audit_id", null: false
     t.integer "chunk_index"
@@ -36,6 +49,18 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_17_214329) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["video_audit_id"], name: "index_llm_partial_responses_on_video_audit_id"
+  end
+
+  create_table "user_knowledge_preferences", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "knowledge_base_category_id", null: false
+    t.boolean "enabled", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["enabled"], name: "index_user_knowledge_preferences_on_enabled", where: "(enabled = true)"
+    t.index ["knowledge_base_category_id"], name: "index_user_knowledge_preferences_on_knowledge_base_category_id"
+    t.index ["user_id", "knowledge_base_category_id"], name: "index_user_knowledge_prefs_on_user_and_category", unique: true
+    t.index ["user_id"], name: "index_user_knowledge_preferences_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -78,5 +103,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_17_214329) do
 
   add_foreign_key "issue_screenshots", "video_audits"
   add_foreign_key "llm_partial_responses", "video_audits"
+  add_foreign_key "user_knowledge_preferences", "knowledge_base_categories", on_delete: :cascade
+  add_foreign_key "user_knowledge_preferences", "users", on_delete: :cascade
+  add_foreign_key "ux_knowledge_documents", "knowledge_base_categories", column: "category_id"
   add_foreign_key "video_audits", "users"
 end

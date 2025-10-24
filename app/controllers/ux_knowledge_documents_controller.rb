@@ -11,6 +11,17 @@ class UxKnowledgeDocumentsController < ApplicationController
     @documents = UxKnowledgeDocument.order(:file_name, :chunk_index)
                                   .limit(20)
                                   .offset((params[:page].to_i - 1) * 20)
+
+    # Load knowledge base categories and user preferences for logged-in users
+    if user_signed_in?
+      @knowledge_categories = KnowledgeBaseCategory
+        .ordered
+        .includes(:ux_knowledge_documents)
+      @user_preferences = current_user
+        .user_knowledge_preferences
+        .includes(:knowledge_base_category)
+        .index_by(&:knowledge_base_category_id)
+    end
   end
 
   def show

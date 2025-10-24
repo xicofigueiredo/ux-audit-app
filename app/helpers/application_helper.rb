@@ -9,10 +9,10 @@ module ApplicationHelper
     if frame_ref =~ /Frame(?:s)? (\d+)(?:-(\d+))?/i
       start_frame = $1.to_i
       end_frame = $2 ? $2.to_i : start_frame
-      # With 2 FPS, each frame represents 0.5 seconds
-      # Frame 1 = 0.0s, Frame 2 = 0.5s, Frame 3 = 1.0s, etc.
-      start_time = Time.at((start_frame - 1) / 2.0).utc.strftime('%-M:%S')
-      end_time = Time.at((end_frame - 1) / 2.0).utc.strftime('%-M:%S')
+      # With 3 FPS, each frame represents 0.333 seconds
+      # Frame 1 = 0.0s, Frame 2 = 0.333s, Frame 3 = 0.667s, etc.
+      start_time = Time.at((start_frame - 1) / 3.0).utc.strftime('%-M:%S')
+      end_time = Time.at((end_frame - 1) / 3.0).utc.strftime('%-M:%S')
       return start_time == end_time ? start_time : "#{start_time} - #{end_time}"
     end
     nil
@@ -97,7 +97,9 @@ module ApplicationHelper
 
   # Check if we're on localhost (for development)
   def is_localhost?
-    request.host == 'localhost' || request.host.start_with?('127.0.0.1')
+    request.host == 'localhost' ||
+    request.host.start_with?('127.0.0.1') ||
+    request.host.end_with?('.local')
   end
 
   # Generate URL for app subdomain
