@@ -231,8 +231,11 @@ To ensure a world-class audit, you MUST follow this thinking process:
     # Ensure we're in the correct processing stage
     audit.update!(processing_stage: 'analyzing_ai') if audit.processing_stage != 'analyzing_ai'
 
-    # Initialize UX knowledge retrieval service
-    @ux_knowledge_service = UxKnowledgeRetrievalService.new
+    # Initialize PromptGenerator with user and video audit context
+    prompt_generator = Llm::PromptGenerator.new(
+      user: audit.user,
+      video_audit: audit
+    )
 
     api_key = ENV['OPENAI_API_KEY']
     if api_key.blank?
@@ -248,20 +251,43 @@ To ensure a world-class audit, you MUST follow this thinking process:
       # - Using GPT-4o for both batch analysis (vision) and synthesis
       # - GPT-5 tested but not yet stable for complex synthesis tasks (returns empty responses)
       frame_paths.each_slice(BATCH_SIZE).with_index do |batch, idx|
-        # Get relevant UX knowledge context for this batch
-        ux_context = get_ux_knowledge_context_for_batch(batch, idx)
+        # Generate batch prompt using PromptGenerator service
+        prompt_params = prompt_generator.generate_batch_prompt(
+          batch,
+          idx,
+          frame_paths.size
+        )
 
-        # Prepare prompt with UX knowledge context
-        prompt_with_context = PROMPT_TEMPLATE.gsub('{ux_knowledge_context}', ux_context)
-
-        prompt = <<~PROMPT
-          These are frames #{idx * BATCH_SIZE + 1}-#{[frame_paths.size, (idx + 1) * BATCH_SIZE].min} of #{frame_paths.size} from a single user journey. Please analyze and summarize key UX issues, noting that more frames will follow if this is not the last batch.\n\n#{prompt_with_context}
-        PROMPT
+        # Build messages with system and user prompts
         messages = [
-          { role: "user", content: [{ type: "text", text: prompt }] + batch.map { |frame| { type: "image_url", image_url: { url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}", detail: "low" } } } }
+          {
+            role: "system",
+            content: prompt_params[:system_message]
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt_params[:user_message] }
+            ] + batch.map { |frame|
+              {
+                type: "image_url",
+                image_url: {
+                  url: "data:image/jpeg;base64,#{Base64.strict_encode64(File.read(frame))}",
+                  detail: "high"
+                }
+              }
+            }
+          }
         ]
         # Use GPT-4o for vision processing (proven to work with multiple images + bounding boxes)
-        response = client.chat(parameters: { model: 'gpt-4o', messages: messages, max_tokens: llm_max_tokens })
+        response = client.chat(
+          parameters: {
+            model: 'gpt-4o',
+            messages: messages,
+            temperature: prompt_params[:temperature],
+            max_tokens: prompt_params[:max_tokens]
+          }
+        )
         summary = response.dig("choices", 0, "message", "content")
         # Use JSON extraction helper for batch summary
         extracted_summary = extract_json(summary)
@@ -273,61 +299,29 @@ To ensure a world-class audit, you MUST follow this thinking process:
       audit.update!(processing_stage: 'generating_report')
       track_processing_stage(audit.id, 'generating_report')
 
-      # Get comprehensive UX knowledge context for synthesis
-      synthesis_ux_context = get_comprehensive_ux_context(batch_summaries)
+      # Generate synthesis prompt using PromptGenerator service
+      synthesis_params = prompt_generator.generate_synthesis_prompt(batch_summaries)
 
-      # Synthesize holistic analysis
-      synthesis_prompt = <<~PROMPT
-        Combine the following batch findings into a single, unified analysis. Use the UX knowledge base provided to ensure all recommendations are grounded in established principles.
-
-        ### UX KNOWLEDGE BASE ###
-        #{synthesis_ux_context}
-
-        ### BATCH FINDINGS ###
-        #{batch_summaries.join("\n\n")}
-
-        Output only a single valid JSON object matching the schema below, with no extra text:
-
-        {
-          "workflowSummary": {
-            "userGoal": "",
-            "workflowSteps": [],
-            "totalFramesAnalyzed": ""
-          },
-          "identifiedIssues": [
-            {
-              "frameReference": "Frame X or Frames X-Y",
-              "painPointTitle": "Issue title",
-              "severity": "High/Medium/Low",
-              "issueDescription": "Description",
-              "recommendations": ["Recommendation 1", "Recommendation 2"],
-              "elementRef": {
-                "type": "vision or unknown",
-                "elementLabel": "Element description",
-                "boundingBox": {"x": 0, "y": 0, "width": 0, "height": 0},
-                "confidence": 0.0
-              },
-              "groundingNotes": "Optional notes"
-            }
-          ]
-        }
-
-        CRITICAL INSTRUCTIONS:
-        - PRESERVE all frameReference values from the batch findings exactly as they appear
-        - PRESERVE all elementRef objects from the batch findings (including type, elementLabel, boundingBox, confidence)
-        - Every issue MUST have a frameReference field (e.g., "Frame 5" or "Frames 12-14")
-        - Every issue MUST have an elementRef object with at minimum: type and elementLabel
-        - If batch findings contain elementRef data, you MUST include it in the synthesis
-        - Merge duplicate issues but keep the most detailed elementRef and frameReference data
-        - Ensure all issues reference specific heuristics from the knowledge base
-        - Do not add any other keys or text
-        - Your response must begin with '{' and end with '}'
-      PROMPT
+      # Build messages for synthesis
       messages = [
-        { role: "user", content: [{ type: "text", text: synthesis_prompt }] }
+        {
+          role: "system",
+          content: synthesis_params[:system_message]
+        },
+        {
+          role: "user",
+          content: synthesis_params[:user_message]
+        }
       ]
       # Use GPT-4o for synthesis (GPT-5 not yet stable for complex synthesis tasks)
-      response = client.chat(parameters: { model: 'gpt-4o', messages: messages, max_tokens: llm_max_tokens })
+      response = client.chat(
+        parameters: {
+          model: 'gpt-4o',
+          messages: messages,
+          temperature: synthesis_params[:temperature],
+          max_tokens: synthesis_params[:max_tokens]
+        }
+      )
       holistic_analysis = response.dig("choices", 0, "message", "content")
       begin
         # Use JSON extraction helper for holistic analysis
@@ -358,6 +352,27 @@ To ensure a world-class audit, you MUST follow this thinking process:
         if validation_errors.any?
           Rails.logger.error("LLM response validation failed: #{validation_errors.join(', ')}")
           raise "LLM response quality validation failed: #{validation_errors.join(', ')}"
+        end
+
+        # Filter and deduplicate issues for better quality
+        if parsed_analysis['identifiedIssues'].is_a?(Array)
+          original_count = parsed_analysis['identifiedIssues'].size
+
+          # First, filter out low-quality issues
+          filtered_issues = Llm::IssueFilter.filter(
+            parsed_analysis['identifiedIssues'],
+            min_quality_score: 6
+          )
+
+          # Then, deduplicate similar issues
+          deduplicated_issues = Llm::IssueFilter.deduplicate_similar(filtered_issues)
+
+          parsed_analysis['identifiedIssues'] = deduplicated_issues
+
+          Rails.logger.info(
+            "Issue filtering: #{original_count} → #{deduplicated_issues.size} issues " \
+            "(removed #{original_count - deduplicated_issues.size})"
+          )
         end
 
       rescue JSON::ParserError => e
@@ -444,41 +459,42 @@ To ensure a world-class audit, you MUST follow this thinking process:
         errors << "Issue ##{idx} appears to be a generic heuristic evaluation without frame-specific details"
       end
 
-      # Check for element grounding (elementRef)
+      # Check for element grounding (elementRef) - OPTIONAL BUT ENCOURAGED
+      # We no longer fail validation if elementRef is missing, we just log warnings
       element_ref = issue['elementRef']
       if element_ref.nil? || !element_ref.is_a?(Hash)
-        errors << "Issue ##{idx} missing elementRef object"
+        Rails.logger.warn("Issue ##{idx} missing elementRef object (acceptable - focusing on UX quality over element location)")
       else
-        # Check required fields in elementRef
+        # Check fields in elementRef
         ref_type = element_ref['type']
         if ref_type.nil? || ref_type.to_s.strip.empty?
-          errors << "Issue ##{idx} elementRef missing 'type' field"
+          Rails.logger.warn("Issue ##{idx} elementRef missing 'type' field")
         elsif !['vision', 'unknown'].include?(ref_type.to_s.downcase)
-          errors << "Issue ##{idx} elementRef has invalid type: '#{ref_type}' (must be 'vision' or 'unknown')"
+          Rails.logger.warn("Issue ##{idx} elementRef has invalid type: '#{ref_type}' (should be 'vision' or 'unknown')")
         end
 
         element_label = element_ref['elementLabel']
         if element_label.nil? || element_label.to_s.strip.empty?
-          errors << "Issue ##{idx} elementRef missing 'elementLabel'"
+          Rails.logger.warn("Issue ##{idx} elementRef missing 'elementLabel'")
         elsif element_label.to_s.length < 3
-          errors << "Issue ##{idx} elementRef has generic/short elementLabel: '#{element_label}'"
+          Rails.logger.warn("Issue ##{idx} elementRef has generic/short elementLabel: '#{element_label}'")
         end
 
         # If type is vision, should have bounding box
         if ref_type.to_s.downcase == 'vision'
           bbox = element_ref['boundingBox']
           if bbox.nil? || !bbox.is_a?(Hash)
-            Rails.logger.warn("Issue ##{idx} has type='vision' but missing boundingBox (acceptable but not ideal)")
+            Rails.logger.info("Issue ##{idx} has type='vision' but missing boundingBox (acceptable)")
           elsif !['x', 'y', 'width', 'height'].all? { |k| bbox.key?(k) }
-            Rails.logger.warn("Issue ##{idx} has incomplete boundingBox (missing x/y/width/height)")
+            Rails.logger.info("Issue ##{idx} has incomplete boundingBox (missing x/y/width/height)")
           end
         end
 
-        # If type is unknown, should have grounding notes explaining why
+        # If type is unknown, grounding notes are helpful but not required
         if ref_type.to_s.downcase == 'unknown'
           notes = issue['groundingNotes']
           if notes.nil? || notes.to_s.strip.empty?
-            Rails.logger.warn("Issue ##{idx} has type='unknown' but no groundingNotes explaining why")
+            Rails.logger.info("Issue ##{idx} has type='unknown' without groundingNotes")
           end
         end
       end

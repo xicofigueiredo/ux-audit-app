@@ -125,6 +125,7 @@ module Llm
       @system_message = SYSTEM_MESSAGES[llm_model] || SYSTEM_MESSAGES['gpt-4o']
       @user = user
       @video_audit = video_audit
+      @workflow_criticality = WorkflowClassifier.classify(video_audit) if video_audit
       @knowledge_context = fetch_knowledge_context if @user && @video_audit
     end
 
@@ -288,6 +289,10 @@ module Llm
       <<~PROMPT
         Analyze frames #{frame_range} of #{total_frames} from a user workflow video.
 
+        ### WORKFLOW CONTEXT ###
+        This workflow has been classified as: **#{@workflow_criticality}**
+        Use this classification to inform your severity assessments.
+
         ### THINKING PROCESS (Chain-of-Thought) ###
         Let me analyze this step by step:
 
@@ -296,7 +301,7 @@ module Llm
         3. **Visual Element Assessment**: I'll evaluate the visual hierarchy, layout, and information architecture
         4. **Heuristic Evaluation**: I'll systematically apply Nielsen's 10 Usability Heuristics to each interaction
         5. **Impact Quantification**: I'll assess the severity and impact of each issue on user experience
-        6. **Context-Aware Severity Assessment**: I'll adjust severity ratings based on workflow criticality
+        6. **Context-Aware Severity Assessment**: I'll adjust severity ratings based on workflow criticality (#{@workflow_criticality})
         7. **Solution Generation**: I'll provide specific, actionable recommendations for each issue
 
         ### CONTEXT-AWARE SEVERITY GUIDELINES ###
@@ -367,6 +372,10 @@ module Llm
     def build_standard_batch_message(frame_range, total_frames)
       <<~PROMPT
         Analyze frames #{frame_range} of #{total_frames} from a user workflow video.
+
+        ### WORKFLOW CONTEXT ###
+        This workflow has been classified as: **#{@workflow_criticality}**
+        Use this classification to inform your severity assessments.
 
         ### CONTEXT-AWARE SEVERITY GUIDELINES ###
         Assign severity based on workflow criticality:

@@ -39,10 +39,14 @@ class VideoProcessingJob < ApplicationJob
 
       Rails.logger.info "Extracted frames: \n#{frame_paths.inspect} (count: #{frame_paths.size})"
 
+      # Deduplicate frames to reduce redundancy and cost
+      deduplicated_frames = Video::FrameDeduplicator.deduplicate(frame_paths)
+      Rails.logger.info "Deduplicated frames: #{deduplicated_frames.size} frames kept"
+
       # Save the first frame as thumbnail (base64 encoded)
       thumbnail_base64 = nil
-      if frame_paths.any?
-        first_frame_path = frame_paths.first
+      if deduplicated_frames.any?
+        first_frame_path = deduplicated_frames.first
         thumbnail_base64 = Base64.strict_encode64(File.read(first_frame_path))
         Rails.logger.info "Encoded thumbnail from #{first_frame_path}, length: #{thumbnail_base64.length}"
       end
@@ -53,11 +57,11 @@ class VideoProcessingJob < ApplicationJob
 
       # Update audit with frames, thumbnail, and processing stage in one call
       audit.update!(
-        frames: frame_paths,
+        frames: deduplicated_frames,
         thumbnail_image: thumbnail_base64,
         processing_stage: 'analyzing_ai'
       )
-      Rails.logger.info "Updated audit with #{frame_paths.size} frames and thumbnail"
+      Rails.logger.info "Updated audit with #{deduplicated_frames.size} frames and thumbnail"
       track_processing_stage(audit.id, 'analyzing_ai')
 
       LlmAnalysisJob.perform_later(audit.id)
